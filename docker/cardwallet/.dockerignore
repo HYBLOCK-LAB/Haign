@@ -1,0 +1,28 @@
+# Ignore build outputs
+*.class
+*.cap
+*.jca
+*.exp
+*.apdu
+*.log
+
+# Ignore IDE configuration files
+.idea/
+.vscode/
+*.iml
+
+# Ignore compiled directories
+build/
+bin/
+out/
+
+# Ignore test or sensitive data
+*.zip
+*.pem
+*.key
+*.der
+*.crt
+
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db

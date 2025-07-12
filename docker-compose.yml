@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  applet:
+    build:
+      context: .
+      dockerfile: docker/cardwallet/Dockerfile
+    image: haign/haign-applet
+    command: ./scripts/build.sh
+    volumes:
+      - ./cardwallet/:/code
+    tty: true
