@@ -1,0 +1,41 @@
+# General
+**/bin/
+**/build/
+**/.env
+
+# For Java Card Projects
+*.class
+*.cap
+*.jca
+*.exp
+*.apdu
+*.jar
+*/externalLibraries/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+.javacard_project
+
+
+# IntelliJ
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secret keys
+*.pem
+*.key
+*.der
+*.crt
+
+# Logs
+*.log
