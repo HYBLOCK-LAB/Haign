@@ -12,7 +12,7 @@ RUN apt-get update && \
     apt-get clean
 
 # Copy and install Java Card SDK
-COPY cardwallet/externalLibraries/java_card_devkit_tools-bin-v25.0.zip /tmp/
+COPY cardwallet/external/java_card_devkit_tools-bin-v25.0.zip /tmp/
 RUN mkdir -p $JC_HOME && \
     unzip /tmp/java_card_devkit_tools-bin-v25.0.zip -d $JC_HOME && \
     rm /tmp/java_card_devkit_tools-bin-v25.0.zip

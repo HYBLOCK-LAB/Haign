@@ -10,7 +10,7 @@
 *.exp
 *.apdu
 *.jar
-*/externalLibraries/
+cardwallet/external/
 
 # Eclipse
 .classpath
