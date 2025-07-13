@@ -27,6 +27,59 @@ cardwallet/external/
 # VSCode
 .vscode/
 
+# Xcode
+DerivedData/
+build/
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+
+# Xcode Archives
+*.xcarchive
+
+# Swift Package Manager
+/.build/
+/Packages/
+/swiftpm/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# User settings
+*.perspective
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Asset catalogs
+*.atlasset
+
+
+
+# certificates*.cer
+*.pfx
+*.p12
+*.mobileprovision
+
+
 # OS files
 .DS_Store
 Thumbs.db
