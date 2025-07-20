@@ -1,6 +1,6 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2022, ThothTrust Private Limited
  * All rights reserved.
  *
@@ -31,7 +31,7 @@
  *
  */
 
-package com.haign.crypto;
+package com.haign.wallet;
 
 import javacard.framework.Util;
 
@@ -63,7 +63,7 @@ public class MathUtil {
 	}
 
 	public static void rotl64(byte[] a, short offset, short amt, byte[] buff, short buffOffset, short sBuff1,
-			short sBuff2, short sBuff3, short sBuff4) {
+	                          short sBuff2, short sBuff3, short sBuff4) {
 		sBuff1 = (short) (amt % 8);
 		sBuff2 = (short) (amt / 8);
 		buff[buffOffset] = a[offset];

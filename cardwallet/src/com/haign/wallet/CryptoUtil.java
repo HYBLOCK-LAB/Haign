@@ -1,4 +1,4 @@
-package com.haign.crypto;
+package com.haign.wallet;
 
 import javacard.security.MessageDigest;
 

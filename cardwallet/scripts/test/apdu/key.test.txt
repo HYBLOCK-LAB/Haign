@@ -1,0 +1,24 @@
+; SELECT applet by AID (6 bytes: F0 00 00 00 01 01)
+00 A4 04 00 06 F0 00 00 00 01 01
+; Expected: 9000 (Success)
+
+; GENERATE KEY PAIR (INS = 0x30)
+; use 16-byte UUID, Lc = 0x10
+80 30 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected: 9000 (Success);
+
+; GET PUBLIC KEY (INS = 0x32)
+; get public key using UUID (ETH → uncompressed, 65 bytes)
+80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected response: 65-byte uncompressed public key (starts with 0x04) + SW 9000
+
+; GET PUBLIC ADDRESS
+; get public address using UUID (ETH → uncompressed, 65 bytes)
+80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected response: compressed public address (starts with 0x04) + SW 9000
+
+; SIGN (INS = 0x34)
+;// Request signature
+;// example: "deadbeef..."
+;80 30 00 00 20 DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF
+; Expected: Signature data + 9000

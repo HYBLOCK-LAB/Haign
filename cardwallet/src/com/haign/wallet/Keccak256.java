@@ -1,6 +1,6 @@
 /*
  * BSD 3-Clause License
- * 
+ *
  * Copyright (c) 2022, ThothTrust Private Limited
  * All rights reserved.
  *
@@ -37,7 +37,7 @@
  * ----------------------------------------------------------------------------
  */
 
-package com.haign.crypto;
+package com.haign.wallet;
 
 import javacard.framework.JCSystem;
 import javacard.framework.Util;
@@ -93,35 +93,35 @@ public class Keccak256 {
 	public boolean[] bb;
 
 	public Keccak256() {
-		rhoPositions = new short[] { 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61,
+		rhoPositions = new short[]{ 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61,
 				20, 44 };
-		piPositions = new short[] { 10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6,
+		piPositions = new short[]{ 10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6,
 				1 };
 
-		rc0 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
-		rc1 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x82 };
-		rc2 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x8A };
-		rc3 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x00 };
-		rc4 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x8B };
-		rc5 = new byte[] { 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x01 };
-		rc6 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x81 };
-		rc7 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x09 };
-		rc8 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x8A };
-		rc9 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x88 };
-		rc10 = new byte[] { 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x09 };
-		rc11 = new byte[] { 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x0A };
-		rc12 = new byte[] { 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x8B };
-		rc13 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x8B };
-		rc14 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x89 };
-		rc15 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x03 };
-		rc16 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x02 };
-		rc17 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80 };
-		rc18 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x0A };
-		rc19 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x0A };
-		rc20 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x81 };
-		rc21 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x80 };
-		rc22 = new byte[] { 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x01 };
-		rc23 = new byte[] { (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x08 };
+		rc0 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+		rc1 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x82 };
+		rc2 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x8A };
+		rc3 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x00 };
+		rc4 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x8B };
+		rc5 = new byte[]{ 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x01 };
+		rc6 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x81 };
+		rc7 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x09 };
+		rc8 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x8A };
+		rc9 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x88 };
+		rc10 = new byte[]{ 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x09 };
+		rc11 = new byte[]{ 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x0A };
+		rc12 = new byte[]{ 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x8B };
+		rc13 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x8B };
+		rc14 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x89 };
+		rc15 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x03 };
+		rc16 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x02 };
+		rc17 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80 };
+		rc18 = new byte[]{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x0A };
+		rc19 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x0A };
+		rc20 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, (byte) 0x81 };
+		rc21 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x80, (byte) 0x80 };
+		rc22 = new byte[]{ 0x00, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, 0x00, 0x01 };
+		rc23 = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00, (byte) 0x80, 0x00, (byte) 0x80, 0x08 };
 
 		msgBuff = JCSystem.makeTransientByteArray(blockLen, JCSystem.CLEAR_ON_DESELECT);
 		rdBuff = JCSystem.makeTransientByteArray(blockLen, JCSystem.CLEAR_ON_DESELECT);
@@ -153,7 +153,7 @@ public class Keccak256 {
 		// blocks of 136 bytes and if input is less than 136 bytes, buffer off
 		// in msgBuffer and hold till next update() or finalize() call.
 		if (input != null) {
-			for (sb[7] = 0; sb[7] < length;) {
+			for (sb[7] = 0; sb[7] < length; ) {
 				// Reset round execution state
 				bb[0] = true;
 
@@ -392,15 +392,15 @@ public class Keccak256 {
 				Util.arrayCopyNonAtomic(state, (short) 8, buff2, (short) 0, (short) 8); // t = st[1];
 				for (sb[1] = (short) 0; sb[1] < (short) 24; sb[1]++) { // for (i = 0; i < 24; i++) {
 					Util.arrayCopyNonAtomic(state, (short) (piPositions[sb[1]] * 8), buff1, (short) 0, (short) 8);// bc[0]
-																													// =
-																													// st[keccakf_piln[i]];
+					// =
+					// st[keccakf_piln[i]];
 					MathUtil.rotl64(buff2, (short) 0, rhoPositions[sb[1]], buff, (short) 0, sb[2], sb[3], sb[4], sb[5]); // rho
-																															// <-
-																															// ROTL64(t,
-																															// keccakf_rotc[i]);
+					// <-
+					// ROTL64(t,
+					// keccakf_rotc[i]);
 					Util.arrayCopyNonAtomic(buff2, (short) 0, state, (short) (piPositions[sb[1]] * 8), (short) 8);// st[keccakf_piln[i]]
-																													// =
-																													// rho;
+					// =
+					// rho;
 					Util.arrayCopyNonAtomic(buff1, (short) 0, buff2, (short) 0, (short) 8);// t = bc[0];
 				} // }
 
@@ -586,56 +586,56 @@ public class Keccak256 {
 
 	public byte[] getRoundConstant(short r) {
 		switch (r) {
-		case 0:
-			return rc0;
-		case 1:
-			return rc1;
-		case 2:
-			return rc2;
-		case 3:
-			return rc3;
-		case 4:
-			return rc4;
-		case 5:
-			return rc5;
-		case 6:
-			return rc6;
-		case 7:
-			return rc7;
-		case 8:
-			return rc8;
-		case 9:
-			return rc9;
-		case 10:
-			return rc10;
-		case 11:
-			return rc11;
-		case 12:
-			return rc12;
-		case 13:
-			return rc13;
-		case 14:
-			return rc14;
-		case 15:
-			return rc15;
-		case 16:
-			return rc16;
-		case 17:
-			return rc17;
-		case 18:
-			return rc18;
-		case 19:
-			return rc19;
-		case 20:
-			return rc20;
-		case 21:
-			return rc21;
-		case 22:
-			return rc22;
-		case 23:
-			return rc23;
-		default:
-			return null;
+			case 0:
+				return rc0;
+			case 1:
+				return rc1;
+			case 2:
+				return rc2;
+			case 3:
+				return rc3;
+			case 4:
+				return rc4;
+			case 5:
+				return rc5;
+			case 6:
+				return rc6;
+			case 7:
+				return rc7;
+			case 8:
+				return rc8;
+			case 9:
+				return rc9;
+			case 10:
+				return rc10;
+			case 11:
+				return rc11;
+			case 12:
+				return rc12;
+			case 13:
+				return rc13;
+			case 14:
+				return rc14;
+			case 15:
+				return rc15;
+			case 16:
+				return rc16;
+			case 17:
+				return rc17;
+			case 18:
+				return rc18;
+			case 19:
+				return rc19;
+			case 20:
+				return rc20;
+			case 21:
+				return rc21;
+			case 22:
+				return rc22;
+			case 23:
+				return rc23;
+			default:
+				return null;
 		}
 	}
 
