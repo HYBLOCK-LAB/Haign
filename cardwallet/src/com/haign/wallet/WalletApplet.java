@@ -14,12 +14,24 @@ import javacardx.apdu.ExtendedLength;
 
 public class WalletApplet extends Applet implements ExtendedLength {
 	// APDU instruction codes
-	private static final byte INS_VERIFY_PIN = (byte) 0x10;
-	private static final byte INS_GENERATE_KEY = (byte) 0x20;
-	private static final byte INS_GET_PUBKEY = (byte) 0x21;
-	private static final byte INS_SIGN = (byte) 0x30;
+
+	// 0x2x: PIN/Authentication Instructions
+	private static final byte INS_VERIFY_PIN = (byte) 0x20;
+	private static final byte INS_CHANHE_PIN = (byte) 0x22;
+	private static final byte INS_RESET_PIN = (byte) 0x24;
+
+	// 0x3x: Key Management Instructions
+	private static final byte INS_GENERATE_KEY = (byte) 0x30;
+	private static final byte INS_GET_PUBKEY = (byte) 0x32;
+	private static final byte INS_SIGN = (byte) 0x34;
+
+	// 0x4x: Coin Selection & Metadata Instructions
 	private static final byte INS_SELECT_COIN = (byte) 0x40;
+
+	// 0x5x: Address Retrieval Instructions
 	private static final byte INS_GET_ADDRESS = (byte) 0x50;
+	private static final byte INS_LIST_ADDRESSES = (byte) 0x52;
+
 
 	// COINS
 	static final byte COIN_BTC = (byte) 0x01;
@@ -68,12 +80,16 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				// TODO maintain session in 30 seconds when sign transactions.
 				pinManager.verify(apdu);
 				break;
-
+			case INS_CHANHE_PIN:
+				pinManager.change(apdu);
+				break;
+			case INS_RESET_PIN:
+				pinManager.reset(apdu);
+				break;
 			case INS_GENERATE_KEY:
 				checkAuth();
 				keyManager.generateKeyPair(apdu);
 				break;
-
 			case INS_GET_PUBKEY:
 				checkAuth();
 				keyManager.sendPublicKey(apdu, currentCoinType);
