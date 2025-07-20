@@ -25,29 +25,28 @@ public class WalletApplet extends Applet implements ExtendedLength {
 	private static final byte INS_GET_PUBKEY = (byte) 0x32;
 	private static final byte INS_SIGN = (byte) 0x34;
 
-	// 0x4x: Coin Selection & Metadata Instructions
-	private static final byte INS_SELECT_COIN = (byte) 0x40;
+	// 0x4x: Address Retrieval Instructions
+	private static final byte INS_GET_ADDRESS = (byte) 0x40;
+	private static final byte INS_LIST_ADDRESSES = (byte) 0x42;
 
-	// 0x5x: Address Retrieval Instructions
-	private static final byte INS_GET_ADDRESS = (byte) 0x50;
-	private static final byte INS_LIST_ADDRESSES = (byte) 0x52;
-
+	// 0x5x: Metadata Instructions
+	private static final byte INS_GET_EEPROM_FREE = (byte) 0x50;
 
 	// COINS
 	static final byte COIN_BTC = (byte) 0x01;
 	static final byte COIN_ETH = (byte) 0x02;
 	static final byte COIN_XRP = (byte) 0x03;
 
-	private byte currentCoinType = COIN_BTC;
-
 	private final PINManager pinManager;
 	private final KeyManager keyManager;
 	private final SignatureManager signatureManager;
+	private final AppManager appManager;
 
 	protected WalletApplet(byte[] bArray, short bOffset, byte bLength) {
 		pinManager = new PINManager();
 		keyManager = new KeyManager();
 		signatureManager = new SignatureManager();
+		appManager = new AppManager();
 		register(bArray, ((short) (bOffset + 1)), bArray[bOffset]);
 	}
 
@@ -92,16 +91,24 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				break;
 			case INS_GET_PUBKEY:
 				checkAuth();
-				keyManager.sendPublicKey(apdu, currentCoinType);
+				keyManager.sendPublicKey(apdu);
 				break;
-
 			case INS_SIGN:
 				checkAuth();
 				keyManager.loadKeyPair();
-				signatureManager.sign(apdu, keyManager.getPrivateKey(), currentCoinType);
+				signatureManager.sign(apdu, keyManager.getPrivateKey());
 				break;
-			case INS_SELECT_COIN:
-				currentCoinType = buffer[ISO7816.OFFSET_P1];
+			case INS_GET_ADDRESS:
+				checkAuth();
+				keyManager.getAddress(apdu);
+				break;
+//			case INS_LIST_ADDRESSES:
+//				checkAuth();
+//				keyManager.loadKeyPair();
+//				signatureManager.getAllAddress(apdu);
+//				break;
+			case INS_GET_EEPROM_FREE:
+				appManager.getFreeEEPROM(apdu);
 				break;
 
 			default:
