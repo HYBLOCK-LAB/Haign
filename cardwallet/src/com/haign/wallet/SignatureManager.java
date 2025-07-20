@@ -6,19 +6,23 @@ import javacard.security.Signature;
 
 class SignatureManager {
 	private final Signature signature;
+	private final byte[] hashBuffer;
 
 	public SignatureManager() {
 		signature = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
+		// default 32-byte buffer
+		hashBuffer = JCSystem.makeTransientByteArray((short) 32, JCSystem.CLEAR_ON_RESET);
 	}
 
-	public void sign(APDU apdu, PrivateKey privateKey, byte coinType) {
+	public void sign(APDU apdu, PrivateKey privateKey) {
 		byte[] buffer = apdu.getBuffer();
+
+		byte coinType = buffer[ISO7816.OFFSET_P1];
+
 		short dataOffset = ISO7816.OFFSET_CDATA;
 		short dataLen = apdu.setIncomingAndReceive();
 
 		short hashLen;
-		// default 32-byte buffer
-		byte[] hashBuffer = JCSystem.makeTransientByteArray((short) 32, JCSystem.CLEAR_ON_RESET);
 
 		switch (coinType) {
 			case WalletApplet.COIN_BTC:
