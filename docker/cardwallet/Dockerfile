@@ -16,12 +16,13 @@ COPY cardwallet/external/java_card_devkit_tools-bin-v25.0.zip /tmp/
 RUN mkdir -p $JC_HOME && \
     unzip /tmp/java_card_devkit_tools-bin-v25.0.zip -d $JC_HOME && \
     rm /tmp/java_card_devkit_tools-bin-v25.0.zip
-	
-# Copy build script
-COPY cardwallet/scripts/build.sh /scripts/build.sh
-RUN chmod +x /scripts/build.sh
 
 # Copy project source code
 RUN mkdir /code
 WORKDIR /code
 COPY cardwallet/ /code/
+
+# Copy build script
+COPY cardwallet/scripts/build.sh /scripts/build.sh
+RUN chmod +x /scripts/build.sh
+

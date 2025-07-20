@@ -10,7 +10,7 @@ PKG_PATH="com/haign/wallet"
 PACKAGE="com.haign.wallet"
 APPLET_CLASS="WalletApplet"
 
-JC_API_JAR="/opt/javacard-sdk/lib/api_classic-3.2.0.jar"
+JC_API_JAR="/opt/javacard-sdk/lib/api_classic-3.0.5.jar"
 CONVERTER="/opt/javacard-sdk/bin/converter.sh"
 EXP_PATH="/build"
 
@@ -30,23 +30,14 @@ javac \
   -d "$BUILD_DIR" \
   $(find "$SRC_DIR" -name "*.java")
 
-echo "[+] Converting to dependent files..."
-"$CONVERTER" \
-  -classdir "$BUILD_DIR" \
-  -out CAP EXP \
-  -d "$BUILD_DIR" \
-  com.haign.crypto 0xF0:0x00:0x00:0x00:0x02:0x00 1.0
-  
-
-echo "[+] Converting to CAP... $BUILD_DIR"
-  
+echo "[+] Converting to CAP..."
 "$CONVERTER" \
   -classdir "$BUILD_DIR" \
   -applet 0xF0:0x00:0x00:0x00:0x01:0x01 com.haign.wallet.WalletApplet \
   -out CAP JCA EXP \
   -d "$DELIVER_DIR" \
   -exportpath "$BUILD_DIR" \
-  -target 3.2.0 \
+  -target 3.0.5 \
   com.haign.wallet 0xF0:0x00:0x00:0x00:0x01:0x00 1.0
 
 
