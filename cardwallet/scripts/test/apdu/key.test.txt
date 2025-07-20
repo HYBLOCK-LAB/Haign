@@ -2,57 +2,23 @@
 00 A4 04 00 06 F0 00 00 00 01 01
 ; Expected: 9000 (Success)
 
+; GENERATE KEY PAIR (INS = 0x30)
+; use 16-byte UUID, Lc = 0x10
+80 30 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected: 9000 (Success);
 
-;// -----------------------------------------------------------------
-;// 3. SELECT COIN TYPE (INS = 0x40)
-;// 예시: 0x02 = Ethereum 선택, P1 = 0x02, P2 = 0x00, No Data
-;// -----------------------------------------------------------------;
-;80 40 02 00 00
-;// Expected: 9000 → Coin type set;
+; GET PUBLIC KEY (INS = 0x32)
+; get public key using UUID (ETH → uncompressed, 65 bytes)
+80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected response: 65-byte uncompressed public key (starts with 0x04) + SW 9000
 
-;// --------------------------------------------------------
-;// 4. GENERATE KEY PAIR (INS = 0x20)
-;// 16-byte UUID 사용, Lc = 0x10
-;// --------------------------------------------------------;
-;80 20 00 00 10 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
-;// Expected: 9000 → 키 생성 성공;
+; GET PUBLIC ADDRESS
+; get public address using UUID (ETH → uncompressed, 65 bytes)
+80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; Expected response: compressed public address (starts with 0x04) + SW 9000
 
-;// --------------------------------------------------------
-;// 5. GET PUBLIC KEY (INS = 0x21)
-;// 요청한 UUID로 공개키 요청 (ETH → uncompressed, 65 bytes)
-;// --------------------------------------------------------;
-;80 21 00 00 10 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
-;// Expected: 65-byte 공개키 시작 바이트 0x04로 시작 + 9000
-
-;// --------------------------------------------------------
-;/;/ 6. SIGN (INS = 0x30)
-;// 서명 요청 (데이터 길이와 포맷은 앱에 따라 유동)
-;// 예시: "deadbeef..." 메시지를 해시해서 서명
-;// --------------------------------------------------------
+; SIGN (INS = 0x34)
+;// Request signature
+;// example: "deadbeef..."
 ;80 30 00 00 20 DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF
-;// Expected: Signature 데이터 + 9000
-
-
-
-
-
-
-
-
-
-; Generate EC key pair using 16-byte UUID
-; CLA = 0x80, INS = 0x10, P1/P2 = 0x00, Lc = 0x10
-; 80 10 00 00 10 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10
-; Expected: 9000 (Key pair generated successfully)
-
-; Request public key for the same UUID
-; CLA = 0x80, INS = 0x20, P1 = coinType (ETH=0x01), P2 = 0x00
-; Data: UUID (16 bytes), Lc = 0x10
-;80 20 01 00 10 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10
-; Expected: 65-byte uncompressed public key (starts with 0x04) + 9000
-
-; Request ETH address (Keccak256(pubkey)[12:32])
-; CLA = 0x80, INS = 0x30, P1 = 0x01 (ETH), P2 = 0x00
-; Data: UUID (16 bytes), Lc = 0x10
-;80 30 01 00 10 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10
-; Expected: 20-byte Ethereum address + 9000
+; Expected: Signature data + 9000
