@@ -8,7 +8,7 @@ import javacardx.apdu.ExtendedLength;
 
 /**
  * Applet class
- * 
+ *
  * @author jiseop9083
  */
 
@@ -41,7 +41,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 
 	/**
 	 * Installs this applet.
-	 * 
+	 *
 	 * @param bArray  the array containing installation parameters
 	 * @param bOffset the starting offset in bArray
 	 * @param bLength the length in bytes of the parameter data in bArray
@@ -52,9 +52,10 @@ public class WalletApplet extends Applet implements ExtendedLength {
 
 	/**
 	 * Processes an incoming APDU.
-	 * 
-	 * @see APDU
+	 *
 	 * @param apdu the incoming APDU
+	 *
+	 * @see APDU
 	 */
 	public void process(APDU apdu) {
 		byte[] buffer = apdu.getBuffer();
@@ -63,32 +64,32 @@ public class WalletApplet extends Applet implements ExtendedLength {
 			return;
 
 		switch (buffer[ISO7816.OFFSET_INS]) {
-		case INS_VERIFY_PIN:
-			// TODO maintain session in 30 seconds when sign transactions.
-			pinManager.verify(apdu);
-			break;
+			case INS_VERIFY_PIN:
+				// TODO maintain session in 30 seconds when sign transactions.
+				pinManager.verify(apdu);
+				break;
 
-		case INS_GENERATE_KEY:
-			checkAuth();
-			keyManager.generateKeyPair(apdu);
-			break;
+			case INS_GENERATE_KEY:
+				checkAuth();
+				keyManager.generateKeyPair(apdu);
+				break;
 
-		case INS_GET_PUBKEY:
-			checkAuth();
-			keyManager.sendPublicKey(apdu, currentCoinType);
-			break;
+			case INS_GET_PUBKEY:
+				checkAuth();
+				keyManager.sendPublicKey(apdu, currentCoinType);
+				break;
 
-		case INS_SIGN:
-			checkAuth();
-			keyManager.loadKeyPair();
-			signatureManager.sign(apdu, keyManager.getPrivateKey(), currentCoinType);
-			break;
-		case INS_SELECT_COIN:
-			currentCoinType = buffer[ISO7816.OFFSET_P1];
-			break;
+			case INS_SIGN:
+				checkAuth();
+				keyManager.loadKeyPair();
+				signatureManager.sign(apdu, keyManager.getPrivateKey(), currentCoinType);
+				break;
+			case INS_SELECT_COIN:
+				currentCoinType = buffer[ISO7816.OFFSET_P1];
+				break;
 
-		default:
-			ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
+			default:
+				ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 		}
 	}
 
