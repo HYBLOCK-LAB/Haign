@@ -3,20 +3,20 @@
 This document outlines key differences and caveats developers should be aware of when transitioning from standard Java to Java Card.
 
 ## Abstraction
-| Topic                        | Java                         | Java Card                                | Notes |
-|-----------------------------|------------------------------|------------------------------------------|-------|
-| Memory Management           | Automatic (Garbage Collected)| Manual; no GC; EEPROM/RAM distinction     | Use `JCSystem.makeTransient...` for RAM |
-| Data Types                  | `int`, `long`, `float` etc.  | Only `byte`, `short`                     | Use fixed-size arrays for structures |
-| Object Allocation           | Allowed at any time          | Only at install-time (for persistent objects) | No dynamic allocation during runtime |
-| Exception Handling          | Extensive use acceptable     | Try to minimize; expensive on smartcards | Avoid try-catch inside loops |
-| Standard Libraries          | Full Java SE                 | Only Java Card API (subset)              | No `java.util`, `java.io`, etc. |
-| Class Size Limit            | No limit                     | CAP file class size limit (e.g. 64KB)    | Split logic if needed |
-| String Handling             | `String` supported           | No native `String` class                 | Use byte arrays instead |
-| Logging / Debugging         | System.out/Logging available | No console output or logging             | Use status words or APDU responses for debugging |
-| File I/O                    | Available                    | Not supported                            | No filesystem on card |
-| Static Initialization       | Commonly used                | Must be carefully handled to avoid EEPROM wear | Avoid frequent writes |
-| Threads / Concurrency       | Supported                    | Not supported                            | Single-threaded execution only |
-| API Usage                   | Flexible                     | Use `Util`, `ISO7816`, `JCSystem`, etc.  | Rely on provided helper classes |
+| Topic                        | Java                         | Java Card                                     | Notes                                             |
+|-----------------------------|------------------------------|------------------------------------------------|---------------------------------------------------|
+| Memory Management           | Automatic (Garbage Collected)| Manual; no GC; EEPROM/RAM distinction          | Use `JCSystem.makeTransient...` for RAM           |
+| Data Types                  | `int`, `long`, `float` etc.  | Only `byte`, `short`                           | Use fixed-size arrays for structures              |
+| Object Allocation           | Allowed at any time          | Only at install-time (for persistent objects)  | No dynamic allocation during runtime              |
+| Exception Handling          | Extensive use acceptable     | Try to minimize; expensive on smartcards       | Avoid try-catch inside loops                      |
+| Standard Libraries          | Full Java SE                 | Only Java Card API (subset)                    | No `java.util`, `java.io`, etc.                   |
+| Class Size Limit            | No limit                     | CAP file class size limit (e.g. 64KB)          | Split logic if needed                             |
+| String Handling             | `String` supported           | No native `String` class                       | Use byte arrays instead                           |
+| Logging / Debugging         | System.out/Logging available | No console output or logging                   | Use status words or APDU responses for debugging  |
+| File I/O                    | Available                    | Not supported                                  | No filesystem on card                             |
+| Static Initialization       | Commonly used                | Must be carefully handled to avoid EEPROM wear | Avoid frequent writes                             |
+| Threads / Concurrency       | Supported                    | Not supported                                  | Single-threaded execution only                    |
+| API Usage                   | Flexible                     | Use `Util`, `ISO7816`, `JCSystem`, etc.        | Rely on provided helper classes                   |
 
 
 # APDU Instruction Codes and Status Words
@@ -57,11 +57,35 @@ This document outlines key differences and caveats developers should be aware of
 
 
 ## Status Words
-
+### Custom
 | Status Code       | Constant                   | Meaning                                                                                                                             | 
 |-------------------|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| **`0x6F 0x11`**   | `ILLEGAL_VALUE`            |	The provided data value is invalid or out of the allowed range (e.g., unsupported key length or parameter).                        |
-| **`0x6F 0x12`**   | `UNINITIALIZED_KEY`        |	Attempted to use a key object before initializing it with a valid key pair.                                                        |
-| **`0x6F 0x13`**   | `NO_SUCH_ALGORITHM`        |	The requested cryptographic algorithm or transformation is not supported by the card.                                              |
-| **`0x6F 0x14`**   | `INVALID_INIT`             |	Failed to initialize the cryptographic operation with the given parameters (e.g., incorrect algorithm mode or invalid key params). |
-| **`0x6F 0x15`**   | `ILLEGAL_USE`              |	The requested operation is not allowed in the current state or context (e.g., invoking a sign operation on a non‑signing key).     |
+| **`0x6F11`**      | `ILLEGAL_VALUE`            |	The provided data value is invalid or out of the allowed range (e.g., unsupported key length or parameter).                        |
+| **`0x6F12`**      | `UNINITIALIZED_KEY`        |	Attempted to use a key object before initializing it with a valid key pair.                                                        |
+| **`0x6F13`**      | `NO_SUCH_ALGORITHM`        |	The requested cryptographic algorithm or transformation is not supported by the card.                                              |
+| **`0x6F14`**      | `INVALID_INIT`             |	Failed to initialize the cryptographic operation with the given parameters (e.g., incorrect algorithm mode or invalid key params). |
+| **`0x6F15`**      | `ILLEGAL_USE`              |	The requested operation is not allowed in the current state or context (e.g., invoking a sign operation on a non‑signing key).     |
+
+### ISO7816
+| Status Code       | Constant                           | Meaning                                                                                            | 
+|-------------------|------------------------------------|----------------------------------------------------------------------------------------------------|
+| **`0x6700`**      | `SW_WRONG_LENGTH`                  | The length of the command data (Lc) or expected response (Le) does not match the expected value.   |
+| **`0x6982`**      | `SW_SECURITY_STATUS_NOT_SATISFIED` | A required security condition (e.g. PIN verification or secure channel) has not been met.          |
+| **`0x6983`**      | `SW_FILE_INVALID`                  | The referenced file or object is not in a valid state for the requested operation.                 |
+| **`0x6984`**      | `SW_DATA_INVALID`                  | The data field contains invalid or malformed data for this command.                                |
+| **`0x6985`**      | `SW_CONDITIONS_NOT_SATISFIED`      | A precondition for the command (other than security) has not been satisfied.                       |
+| **`0x6A80`**      | `SW_WRONG_DATA`                    | The parameters in the data field are incorrect or unsupported.                                     |
+| **`0x6A81`**      | `SW_FUNC_NOT_SUPPORTED`            | The requested function or instruction is not supported by this applet.                             |
+| **`0x6A82`**      | `SW_FILE_NOT_FOUND`                | The specified file or object could not be found.                                                   |
+| **`0x6A83`**      | `SW_RECORD_NOT_FOUND`              | The requested record in the currently selected file does not exist.                                |
+| **`0x6A86`**      | `SW_INCORRECT_P1P2`                | The combination of P1 and P2 parameters is not valid for this instruction.                         |
+| **`0x6A88`**      | `SW_WRONG_P1P2`                    | One or both of the P1/P2 parameters are outside the allowed range for this command.                |
+| **`0x6D00`**      | `SW_INS_NOT_SUPPORTED`             | The INS byte in the command header is not recognized or implemented.                               |
+| **`0x6E00`**      | `SW_CLA_NOT_SUPPORTED`             | The CLA byte in the command header is not supported by the card.                                   |
+| **`0x6A84`**      | `SW_FILE_FULL`                     | There is no more space in the file or object to store additional data.                             |
+
+
+
+
+
+
