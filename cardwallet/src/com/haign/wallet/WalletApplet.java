@@ -32,6 +32,8 @@ public class WalletApplet extends Applet implements ExtendedLength {
 	// 0x5x: Metadata Instructions
 	private static final byte INS_GET_EEPROM_FREE = (byte) 0x50;
 
+	// 0x6x: seed
+
 	// COINS
 	static final byte COIN_BTC = (byte) 0x01;
 	static final byte COIN_ETH = (byte) 0x02;
