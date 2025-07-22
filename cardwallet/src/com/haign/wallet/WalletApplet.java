@@ -23,11 +23,12 @@ public class WalletApplet extends Applet implements ExtendedLength {
 	// 0x3x: Key Management Instructions
 	private static final byte INS_GENERATE_KEY = (byte) 0x30;
 	private static final byte INS_GET_PUBKEY = (byte) 0x32;
-	private static final byte INS_SIGN = (byte) 0x34;
+	private static final byte INS_GET_ALL_PUBKEY = (byte) 0x34;
+	private static final byte INS_SIGN = (byte) 0x36;
 
 	// 0x4x: Address Retrieval Instructions
 	private static final byte INS_GET_ADDRESS = (byte) 0x40;
-	private static final byte INS_LIST_ADDRESSES = (byte) 0x42;
+//	private static final byte INS_GET_LIST_ADDRESSES = (byte) 0x42;
 
 	// 0x5x: Metadata Instructions
 	private static final byte INS_GET_EEPROM_FREE = (byte) 0x50;
@@ -91,7 +92,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				break;
 			case INS_GET_PUBKEY:
 				checkAuth();
-				keyManager.sendPublicKey(apdu);
+				keyManager.getPublicKey(apdu);
 				break;
 			case INS_SIGN:
 				checkAuth();
@@ -102,11 +103,10 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				checkAuth();
 				keyManager.getAddress(apdu);
 				break;
-//			case INS_LIST_ADDRESSES:
-//				checkAuth();
-//				keyManager.loadKeyPair();
-//				signatureManager.getAllAddress(apdu);
-//				break;
+			case INS_GET_ALL_PUBKEY:
+				checkAuth();
+				keyManager.getAllPublicKey(apdu);
+				break;
 			case INS_GET_EEPROM_FREE:
 				appManager.getFreeEEPROM(apdu);
 				break;

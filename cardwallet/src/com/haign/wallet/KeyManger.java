@@ -1,9 +1,6 @@
 package com.haign.wallet;
 
-import javacard.framework.APDU;
-import javacard.framework.ISO7816;
-import javacard.framework.ISOException;
-import javacard.framework.Util;
+import javacard.framework.*;
 import javacard.security.*;
 
 class KeyManager {
@@ -107,8 +104,63 @@ class KeyManager {
 		publicKey.setW(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
 	}
 
+
+	public void getAllPublicKey(APDU apdu) {
+		lazyInit();
+
+		// Calculate total length
+		short totalLen = 1;
+		short count = 0;
+		for (byte i = 0; i < MAX_KEYS; i++) {
+			if (coinTypeList[i] == 0) continue;
+			count++;
+			if (coinTypeList[i] == WalletApplet.COIN_ETH)
+				totalLen += UNCOMPRESSED_KEY_LENGTH;
+			if (coinTypeList[i] == WalletApplet.COIN_BTC || coinTypeList[i] == WalletApplet.COIN_XRP)
+				totalLen += COMPRESSED_KEY_LENGTH;
+			// UUID and length bit
+			totalLen += UUID_LENGTH + 1;
+		}
+
+		// Prepare transient buffer for each uncompressed key
+		byte[] outBuf = JCSystem.makeTransientByteArray(UNCOMPRESSED_KEY_LENGTH, JCSystem.CLEAR_ON_DESELECT);
+		short outOffset = 0;
+		outBuf[outOffset++] = (byte) count;
+		// For each stored slot, send uncompressed public key
+		for (byte index = 0; index < MAX_KEYS; index++) {
+			short coinType = coinTypeList[index];
+			if (coinType == 0) continue;
+			// Insert length byte
+			short keyLen = (coinType == WalletApplet.COIN_ETH) ? UNCOMPRESSED_KEY_LENGTH : COMPRESSED_KEY_LENGTH;
+			outBuf[outOffset++] = (byte) (keyLen + UUID_LENGTH);
+			// Copy UUID
+			Util.arrayCopyNonAtomic(uuidList, (short) (index * UUID_LENGTH), outBuf, outOffset, UUID_LENGTH);
+			outOffset += UUID_LENGTH;
+			switch (coinType) {
+				case WalletApplet.COIN_ETH:
+					// Ethereum: Uncompressed public key (65 bytes, starts with 0x04)
+					outBuf[outOffset++] = (byte) 0x04;
+					Util.arrayCopyNonAtomic(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), outBuf, outOffset, PUBLIC_KEY_LENGTH);
+					outOffset += PUBLIC_KEY_LENGTH;
+					break;
+				case WalletApplet.COIN_BTC:
+				case WalletApplet.COIN_XRP:
+					// BTC/XRP: compressed public key (33 bytes)
+					compressPublicKey(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), outBuf, outOffset);
+					break;
+				default:
+					ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+			}
+		}
+		// Send entire payload at once
+		apdu.setOutgoing();
+		apdu.setOutgoingLength(totalLen);
+		apdu.sendBytesLong(outBuf, (short) 0, totalLen);
+
+	}
+
 	// instruction: [CLA][INS][coin_type][0x00][0x10][UUID]
-	public void sendPublicKey(APDU apdu) {
+	public void getPublicKey(APDU apdu) {
 		lazyInit();
 		byte[] buffer = apdu.getBuffer();
 		byte coinType = buffer[ISO7816.OFFSET_P1];
@@ -125,9 +177,7 @@ class KeyManager {
 						tmp, (short) 0,
 						PUBLIC_KEY_LENGTH);
 				full[0] = 0x04;
-				Util.arrayCopyNonAtomic(tmp, (short) 0,
-						full, (short) 1,
-						PUBLIC_KEY_LENGTH);
+				Util.arrayCopyNonAtomic(tmp, (short) 0, full, (short) 1, PUBLIC_KEY_LENGTH);
 				apdu.setOutgoingLength((short) full.length);
 				apdu.sendBytesLong(full, (short) 0, (short) full.length);
 				break;
