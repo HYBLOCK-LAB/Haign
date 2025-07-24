@@ -1,10 +1,3 @@
-//
-//  WalletApp.swift
-//  Wallet
-//
-//  Created by jiseop9083 on 7/13/25.
-//
-
 import SwiftUI
 
 @main
@@ -17,11 +10,11 @@ struct WalletApp: App {
                 if showOnboarding {
                     OnboardingView()
                 } else {
-                    MainTabView()
+                    NavigateView()
                 }
             }
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         showOnboarding = false
                     }
