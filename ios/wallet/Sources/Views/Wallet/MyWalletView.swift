@@ -20,7 +20,7 @@ struct MyWalletView: View {
                 .foregroundColor(.white)
                 .cornerRadius(8)
             }
-            .navigationTitle("Card Wallet")
+            .navigationTitle("main.tab.wallet".localized())
             .sheet(isPresented: $isShowNFCWait) {
                 if let cmd = APDUCommand.verifyPIN("1234") {
                     NFCWaitingView(

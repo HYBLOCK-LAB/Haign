@@ -8,7 +8,7 @@ struct SettingsView: View {
                     Toggle("Enable Notifications", isOn: .constant(true))
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("main.tab.settings".localized())
         }
     }
 }

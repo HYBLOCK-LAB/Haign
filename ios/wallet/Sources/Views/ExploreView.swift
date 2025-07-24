@@ -4,7 +4,7 @@ struct ExploreView: View {
     var body: some View {
         NavigationView {
             Text("Explore View")
-                .navigationTitle("Explore")
+                .navigationTitle("main.tab.explore".localized())
         }
     }
 }

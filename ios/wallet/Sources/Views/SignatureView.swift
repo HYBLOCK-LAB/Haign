@@ -24,7 +24,7 @@ struct SignatureView: View {
                 }
             }
             .padding()
-            .navigationTitle("Signature")
+            .navigationTitle("main.tab.signature".localized())
         }
     }
 }
