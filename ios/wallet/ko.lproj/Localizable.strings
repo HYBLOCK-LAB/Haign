@@ -1,0 +1,15 @@
+
+/* PinSetupView */
+"pin.instructions.part1" = "Please";
+"pin.instructions.part2" = "set your PIN";
+"pin.instructions.part3" = "to use for identity verification";
+"pin.instructions.enter_pin_range" = "Please enter a 4–8 digit PIN";
+"pin.actions.clear" = "Clear";
+"pin.actions.complete" = "Complete";
+
+/* Main Tab */
+"main.tab.wallet" = "My Wallet";
+"main.tab.signature" = "Signature";
+"main.tab.exchange" = "Exchange";
+"main.tab.explore" = "Explore";
+"main.tab.settings" = "Settings";

@@ -1,0 +1,16 @@
+
+/* PinSetupView */
+"pin.instructions.part1" = "본인 인증에 사용할";
+"pin.instructions.part2" = "PIN을 설정";
+"pin.instructions.part3" = "해주세요";
+"pin.instructions.enter_pin_range" = "4~8자리 PIN 번호를 입력해주세요";
+"pin.actions.clear" = "초기화";
+"pin.actions.complete" = "설정 완료";
+
+
+/* Main Tab */
+"main.tab.wallet" = "내 지갑";
+"main.tab.signature" = "서명";
+"main.tab.exchange" = "거래";
+"main.tab.explore" = "탐색";
+"main.tab.settings" = "설정";
