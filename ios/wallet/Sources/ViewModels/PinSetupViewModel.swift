@@ -29,3 +29,17 @@ class PinViewModel: ObservableObject {
         return service.verifyPin(input)
     }
 }
+
+extension PinViewModel {
+    var attributedInstruction: AttributedString {
+        let boldText = "pin.instructions.bold".localized()
+        let fullText = String(format: "pin.instructions".localized(), boldText)
+        var attributed = AttributedString(fullText)
+
+        if let range = attributed.range(of: boldText) {
+            attributed[range].font = .system(size: 17, weight: .bold)
+        }
+
+        return attributed
+    }
+}

@@ -13,6 +13,7 @@ struct WalletApp: App {
                     NavigateView()
                 }
             }
+            .environmentObject(LocalizationViewModel.shared)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     withAnimation(.easeOut(duration: 0.5)) {
