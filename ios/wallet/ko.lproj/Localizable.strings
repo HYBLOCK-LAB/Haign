@@ -1,15 +1,32 @@
 
 /* PinSetupView */
-"pin.instructions.part1" = "Please";
-"pin.instructions.part2" = "set your PIN";
-"pin.instructions.part3" = "to use for identity verification";
-"pin.instructions.enter_pin_range" = "Please enter a 4–8 digit PIN";
-"pin.actions.clear" = "Clear";
-"pin.actions.complete" = "Complete";
+"pin.instructions" = "본인 인증에 사용할\n%@해주세요";
+"pin.instructions.bold" = "PIN을 설정";
+"pin.instructions.enter_pin_range" = "4~8자리 PIN 번호를 입력해주세요";
+"pin.actions.clear" = "초기화";
+"pin.actions.complete" = "설정 완료";
+
 
 /* Main Tab */
-"main.tab.wallet" = "My Wallet";
-"main.tab.signature" = "Signature";
-"main.tab.exchange" = "Exchange";
-"main.tab.explore" = "Explore";
-"main.tab.settings" = "Settings";
+"main.tab.wallet" = "내 지갑";
+"main.tab.signature" = "서명";
+"main.tab.exchange" = "거래";
+"main.tab.explore" = "탐색";
+"main.tab.settings" = "설정";
+
+/* Wallet */
+"wallet.not.found" = "지갑이 없습니다";
+"wallet.type.app" = "App 지갑";
+"wallet.type.card" = "Card 지갑";
+
+
+/* Settings */
+"settings.general" = "일반";
+"settings.security" = "보안";
+"settings.option.language" = "언어 설정";
+"settings.option.currency" = "통화 설정";
+"settings.option.notification" = "알림";
+"settings.option.pin" = "PIN 변경";
+"settings.option.face" = "Face ID";
+"settings.language.select" = "언어 선택";
+"settings.currency.select" = "통화 선택";
