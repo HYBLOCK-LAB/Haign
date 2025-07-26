@@ -7,7 +7,7 @@ struct MyWalletView: View {
     // MARK: UI states
 
     @State private var isShowNFCWait = false
-    @State private var isShowAddWallet = false
+    @State private var isShowWalletCreateView = false
     @State private var selectedTab: WalletType = .app
     @State private var highlightedWalletId: UUID? = nil
 
@@ -34,7 +34,7 @@ struct MyWalletView: View {
                         .foregroundColor(.secondary)
 
                     Button(action: {
-                        isShowAddWallet = true
+                        isShowWalletCreateView = true
                     }) {
                         VStack {
                             Image(systemName: "plus")
@@ -109,8 +109,8 @@ struct MyWalletView: View {
                         .onAppear { isShowNFCWait = false }
                 }
             }
-            .fullScreenCover(isPresented: $isShowAddWallet) {
-                WalletAddView(walletType: selectedTab)
+            .navigationDestination(isPresented: $isShowWalletCreateView) {
+                WalletCreateNavigateView(walletType: selectedTab)
             }
         }
     }

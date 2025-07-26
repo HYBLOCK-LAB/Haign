@@ -24,9 +24,9 @@ struct WalletInfoCard: View {
                 Text(wallet.coin.symbol)
                     .font(.headline)
 
-                Text("$\(wallet.coin.pricePerUnit, specifier: "%.2f") (▲1.25%)")
-                    .font(.caption)
-                    .foregroundColor(.green)
+//                Text("$\(wallet.coin.pricePerUnit, specifier: "%.2f") (▲1.25%)")
+//                    .font(.caption)
+//                    .foregroundColor(.green)
             }
 
             Spacer()
@@ -38,7 +38,7 @@ struct WalletInfoCard: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Text("\(wallet.balance, specifier: "%.4f") \(wallet.coin.symbol)")
-                Text("$\(totalValueUSD, specifier: "%.2f")")
+//                Text("$\(totalValueUSD, specifier: "%.2f")")
                     .bold()
             }
         }
