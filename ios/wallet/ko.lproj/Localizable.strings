@@ -18,7 +18,18 @@
 "wallet.not.found" = "지갑이 없습니다";
 "wallet.type.app" = "App 지갑";
 "wallet.type.card" = "Card 지갑";
+"wallet.add.title" = "%@ 지갑 추가하기";
 
+// mnemonic warning view
+"wallet.add.warning.title" = "⚠️ 니모닉 주의사항";
+"wallet.add.warning.description" = "니모닉은 본인의 자산을 복구할 수 있는 유일한 정보입니다. 절대로 타인에게 공유하지 마세요. 안전한 장소에 오프라인으로 보관하세요.";
+"wallet.add.warning.confirm" = "지갑 생성하기";
+
+// mnemonic check view
+"wallet.add.title" = "니모닉 백업";
+"wallet.add.description" = "새 지갑의 니모닉을 안전한 장소에 백업하세요.";
+
+// mnemonic validate view
 
 /* Settings */
 "settings.general" = "일반";
@@ -30,3 +41,14 @@
 "settings.option.face" = "Face ID";
 "settings.language.select" = "언어 선택";
 "settings.currency.select" = "통화 선택";
+
+
+/* Utils */
+"utils.agree" = "내용을 확인했습니다.";
+"utils.important" = "중요";
+
+// Buttons
+"utils.button.previous" = "이전";
+"utils.button.next" = "다음";
+
+

@@ -16,6 +16,18 @@
 "wallet.not.found" = "Wallet not found";
 "wallet.type.app" = "App Wallet";
 "wallet.type.card" = "Card Wallet";
+"wallet.add.title" = "Create %@ wallet";
+
+// mnemonic warning view
+"wallet.add.warning.title" = "⚠️ Mnemonic Warning";
+"wallet.add.warning.description" = "Your mnemonic is the only way to recover your assets. Never share it with anyone. Store it securely in an offline location.";
+"wallet.add.warning.confirm" = "Create Wallet";
+
+// mnemonic check view
+"wallet.add.title" = "Back up the mnemonic of your new wallet in a safe place.";
+"wallet.add.description" = "Back up mnemonic";
+
+// mnemonic validate view
 
 /* Settings */
 "settings.general" = "General";
@@ -27,3 +39,11 @@
 "settings.option.face" = "Face ID";
 "settings.language.select" = "Select Language";
 "settings.currency.select" = "Select Currency";
+
+/* Utils */
+"utils.agree" = "I understand this content.";
+"utils.important" = "Important";
+
+// Buttons
+"utils.button.previous" = "Previous";
+"utils.button.next" = "Next";
