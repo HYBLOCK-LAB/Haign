@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		776A539F2E352AA300E83CA0 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 776A539E2E352AA300E83CA0 /* WalletCore */; };
+		776A53A12E352AA300E83CA0 /* WalletCoreSwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 776A53A02E352AA300E83CA0 /* WalletCoreSwiftProtobuf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		77A03B212E2398630013E1B1 /* Wallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				776A539F2E352AA300E83CA0 /* WalletCore in Frameworks */,
+				776A53A12E352AA300E83CA0 /* WalletCoreSwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = Wallet;
 			packageProductDependencies = (
+				776A539E2E352AA300E83CA0 /* WalletCore */,
+				776A53A02E352AA300E83CA0 /* WalletCoreSwiftProtobuf */,
 			);
 			productName = Wallet;
 			productReference = 77A03B212E2398630013E1B1 /* Wallet.app */;
@@ -95,6 +104,9 @@
 			);
 			mainGroup = 77A03B182E2398630013E1B1;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				776A539D2E352AA300E83CA0 /* XCRemoteSwiftPackageReference "wallet-core" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 77A03B222E2398630013E1B1 /* Products */;
 			projectDirPath = "";
@@ -348,6 +360,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		776A539D2E352AA300E83CA0 /* XCRemoteSwiftPackageReference "wallet-core" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/trustwallet/wallet-core";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.3.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		776A539E2E352AA300E83CA0 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 776A539D2E352AA300E83CA0 /* XCRemoteSwiftPackageReference "wallet-core" */;
+			productName = WalletCore;
+		};
+		776A53A02E352AA300E83CA0 /* WalletCoreSwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 776A539D2E352AA300E83CA0 /* XCRemoteSwiftPackageReference "wallet-core" */;
+			productName = WalletCoreSwiftProtobuf;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 77A03B192E2398630013E1B1 /* Project object */;
 }

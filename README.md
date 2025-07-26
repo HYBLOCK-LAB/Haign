@@ -9,6 +9,7 @@
 Haign is a crypto wallet ecosystem that combines a JavaCard-based smart card with mobile apps for iOS and Android.
 
 ## 📕 Documentation
+
 1. **Convention**  
    Conventions about Coding & Version Control [↗️ Show Docs](./docs/convention.md)
 
@@ -35,14 +36,21 @@ This project consists of the following components:
 
 #### Core Framework & Build Tools
 
-| Library  | Version | Purpose |
-| -------- | ------- | ------- |
-| **Java Card Development Kit**      | 3.2.0       | Core SDK for compiling and converting applets          |
-| **GlobalPlatformPro**              | v24.10.15   | Tool for installing applets onto smart cards via APDU  |
+| Library                       | Version   | Purpose                                               |
+| ----------------------------- | --------- | ----------------------------------------------------- |
+| **Java Card Development Kit** | 3.2.0     | Core SDK for compiling and converting applets         |
+| **GlobalPlatformPro**         | v24.10.15 | Tool for installing applets onto smart cards via APDU |
+
+### iOS Dependencies
+
+| Library        | Version | Purpose                                     |
+| -------------- | ------- | ------------------------------------------- |
+| **WalletCore** | 4.3.6   | use for generating mnemonic and inital seed |
 
 ## 🚀 Getting Started
 
 ### Caution
+
 ⚠️ Windows Compatibility Notice
 
 This project’s files uses Unix-style line endings (`\n`) and Unix-specific tools like `awk` and ANSI escape sequences. As a result, it may not work correctly in Windows default terminals such as CMD or PowerShell.
@@ -90,8 +98,6 @@ make build-applet
 | Command             | Description                |
 | ------------------- | -------------------------- |
 | `make build-applet` | Build `Card Wallet` Applet |
-
-
 
 ## ✨ Key Features
 
