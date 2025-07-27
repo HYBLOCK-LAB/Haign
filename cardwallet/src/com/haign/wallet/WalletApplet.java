@@ -34,11 +34,12 @@ public class WalletApplet extends Applet implements ExtendedLength {
 	private static final byte INS_GET_EEPROM_FREE = (byte) 0x50;
 
 	// 0x6x: seed
+	private static final byte INS_SET_MASTER_SEED = (byte) 0x60;
 
 	// COINS
-	static final byte COIN_BTC = (byte) 0x01;
-	static final byte COIN_ETH = (byte) 0x02;
-	static final byte COIN_XRP = (byte) 0x03;
+	static final byte COIN_BTC = (byte) 0x00;
+	static final byte COIN_ETH = (byte) 0x3c;
+	static final byte COIN_XRP = (byte) 0x90;
 
 	private final PINManager pinManager;
 	private final KeyManager keyManager;
@@ -112,6 +113,8 @@ public class WalletApplet extends Applet implements ExtendedLength {
 			case INS_GET_EEPROM_FREE:
 				appManager.getFreeEEPROM(apdu);
 				break;
+			case INS_SET_MASTER_SEED:
+				keyManager.setMasterKey(apdu);
 
 			default:
 				ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);

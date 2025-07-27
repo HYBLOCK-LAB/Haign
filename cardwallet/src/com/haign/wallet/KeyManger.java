@@ -53,31 +53,44 @@ class KeyManager {
 
 	/**
 	 * INS=0x60: Inject master seed and set master key in HDKeyDerivation.
-	 * APDU data: [seed(32B)]
+	 * APDU data: [seed(64B)]
 	 */
-	public void setMaster(APDU apdu) {
+	public void setMasterKey(APDU apdu) {
 		lazyInit();
 		byte[] buf = apdu.getBuffer();
-		hdTree.setMasterKey(buf, ISO7816.OFFSET_CDATA, (short) 32);
+		short len = apdu.setIncomingAndReceive();
+		if (len != 64) {
+			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		}
+		hdTree.setMasterKey(buf, ISO7816.OFFSET_CDATA, (short) 64);
 	}
 
 
 	/**
 	 * INS=0x61: Derive child key from stored master and path, then store.
-	 * APDU data: [pathLen||pathWords...||UUID(16)||coinType]
+	 * APDU data: [UUID(16)||pathLen(1)||coinType(1)||account(1)||change(1)||address_index(1)]
 	 */
 	public void deriveAndStore(APDU apdu) {
 		lazyInit();
 		byte[] buf = apdu.getBuffer();
 		short off = ISO7816.OFFSET_CDATA;
-		int pathLen = buf[off++] & 0xFF;
-		int[] path = new int[pathLen];
-		for (int i = 0; i < pathLen; i++) path[i] = Util.getShort(buf, (short) (off + i * 2)) & 0xFFFF;
-		off += (short) (pathLen * 2);
+
+		// UUID
 		byte[] uuid = new byte[UUID_LENGTH];
 		Util.arrayCopyNonAtomic(buf, off, uuid, (short) 0, UUID_LENGTH);
 		off += UUID_LENGTH;
-		byte coinType = buf[off];
+
+		// path length
+		int pathLen = buf[off++] & 0xFF;
+		// coinType
+		byte coinType = buf[off++];
+		// account
+		byte account = buf[off++];
+		// change
+		byte change = buf[off++];
+		// addressIndex
+		int addressIndex = buf[off];
+
 		// find free slot
 		byte slot = -1;
 		for (byte i = 0; i < MAX_KEYS; i++)
@@ -89,10 +102,11 @@ class KeyManager {
 		// derive child key
 		byte[] childPrivateKey = new byte[PRIVATE_KEY_LENGTH];
 		byte[] childChainCode = new byte[PRIVATE_KEY_LENGTH];
-		hdTree.derivePath(path, childPrivateKey, childChainCode);
+		hdTree.deriveBip44FullyHardened(coinType, account, change, addressIndex, childPrivateKey, childChainCode);
 		// store private key
 		Util.arrayCopyNonAtomic(childPrivateKey, (short) 0, persistentPrivate, (short) (slot * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
 
+		// TODO REMOVE THIS CODE!!! derive public key using ECDH
 		// derive and store public key
 		privateKey.setS(childPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
 		KeyPair kp = new KeyPair(publicKey, privateKey);

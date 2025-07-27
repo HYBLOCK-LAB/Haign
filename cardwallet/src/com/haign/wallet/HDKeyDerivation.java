@@ -23,10 +23,41 @@ public class HDKeyDerivation {
 	private final byte[] masterPrivateKey = new byte[PRIVATE_KEY_LENGTH];
 	private final byte[] masterChainCode = new byte[CHAIN_CODE_LENGTH];
 
+	private static final byte[] SECP256K1_ORDER = new byte[]{
+			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFE,
+			(byte) 0xBA, (byte) 0xAE, (byte) 0xDC, (byte) 0xE6,
+			(byte) 0xAF, (byte) 0x48, (byte) 0xA0, (byte) 0x3B,
+			(byte) 0xBF, (byte) 0xD2, (byte) 0x5E, (byte) 0x8C,
+			(byte) 0xD0, (byte) 0x36, (byte) 0x41, (byte) 0x41
+	};
+
+	/**
+	 * Given a BIP‑44 coinType, return the matching curve order.
+	 * Currently Bitcoin(0), Ethereum(60), XRP(144) → secp256k1
+	 * Throw SW_DATA_INVALID for unsupported coinType.
+	 */
+	private byte[] getCurveOrder(byte coinType) {
+		switch (coinType & 0xFF) {
+			case 0:  // Bitcoin
+			case 60:  // Ethereum
+			case 144:  // XRP
+				return SECP256K1_ORDER;
+			// TODO if you want to support other curve lik ed25519...
+			// case  236: return ED25519_ORDER;
+			default:
+				ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+				return null; // unreachable
+		}
+	}
+
 	public HDKeyDerivation() {
 		try {
 			hmacSha512 = Signature.getInstance(Signature.ALG_HMAC_SHA_512, false);
 		} catch (CryptoException e) {
+			// does not support HMAC‑SHA512
 			ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
 		}
 		hmacOutput = JCSystem.makeTransientByteArray((short) 64, JCSystem.CLEAR_ON_DESELECT);
@@ -52,10 +83,9 @@ public class HDKeyDerivation {
 
 	/**
 	 * Derive a hardened child key (private key + chain code) from parent key and chain code.
-	 * Non-hardened derivation is not supported on-card.
 	 */
-	public void deriveChildKey(byte[] parentPrivateKey, byte[] parentChainCode, int index,
-	                           byte[] outPrivateKey, byte[] outChainCode) {
+	public void deriveChildKeyHardened(byte[] parentPrivateKey, byte[] parentChainCode, int index, byte coinType,
+	                                   byte[] outPrivateKey, byte[] outChainCode) {
 		if (index < HARDENED_OFFSET) {
 			// Only hardened derivation on-card
 			ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
@@ -73,28 +103,135 @@ public class HDKeyDerivation {
 		hmacSha512.init(null, Signature.MODE_SIGN, parentChainCode, (short) 0, CHAIN_CODE_LENGTH);
 		hmacSha512.sign(childData, (short) 0, pos, childOut, (short) 0);
 
-		Util.arrayCopyNonAtomic(childOut, (short) 0, outPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		// Compute IL + parentPrivateKey mod curve order
+		byte[] tmp = new byte[PRIVATE_KEY_LENGTH];
+		MathUtil.add32(childOut, (short) 0, parentPrivateKey, (short) 0, tmp, (short) 0);
+		byte[] curveOrder = getCurveOrder(coinType);
+		MathUtil.mod32(tmp, (short) 0, curveOrder, (short) 0, outPrivateKey, (short) 0);
+
+		// Copy IR to chain code
 		Util.arrayCopyNonAtomic(childOut, PRIVATE_KEY_LENGTH, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
 	}
 
+	/**
+	 * Non-hardened child derivation: k_i = (IL + k_parent) mod n using parent public key
+	 *
+	 * @param parentPublicKey  parent public key (compressed 33-byte SEC format)
+	 * @param parentPrivateKey parent private key (32 bytes)
+	 * @param parentChainCode  parent chain code (32 bytes)
+	 * @param index            non-hardened index (0 ≤ index < HARDENED_OFFSET)
+	 * @param coinType         coin type
+	 * @param outPrivateKey    output private key (32 bytes)
+	 * @param outChainCode     output chain code (32 bytes)
+	 */
+	public void deriveChildKeyNonHardened(byte[] parentPublicKey, byte[] parentPrivateKey, byte[] parentChainCode,
+	                                      int index, byte coinType, byte[] outPrivateKey, byte[] outChainCode) {
+		if (index >= HARDENED_OFFSET) {
+			ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+		}
+		short pos = 0;
+		Util.arrayCopyNonAtomic(parentPublicKey, (short) 0, childData, pos, (short) 33);
+		pos += 33;
+		childData[pos++] = (byte) (index >>> 24);
+		childData[pos++] = (byte) (index >>> 16);
+		childData[pos++] = (byte) (index >>> 8);
+		childData[pos++] = (byte) (index);
+
+		hmacSha512.init(null, Signature.MODE_SIGN, parentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+		hmacSha512.sign(childData, (short) 0, pos, childOut, (short) 0);
+
+		// Compute IL + parentPrivateKey mod curve order
+		byte[] tmp = new byte[PRIVATE_KEY_LENGTH];
+		MathUtil.add32(childOut, (short) 0, parentPrivateKey, (short) 0, tmp, (short) 0);
+		byte[] order = getCurveOrder(coinType);
+		MathUtil.mod32(tmp, (short) 0, order, (short) 0, outPrivateKey, (short) 0);
+
+		// Copy IR to chain code
+		Util.arrayCopyNonAtomic(childOut, PRIVATE_KEY_LENGTH, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
+	}
 
 	/**
-	 * Derive full hardened BIP‑44 path using internal master key.
+	 * Derive full BIP‑44 path with all hardened steps:
+	 * m/44'/coinType'/account'/change'/addressIndex'
+	 *  TODO use deriveBip44 instead of this function
 	 */
-	public void derivePath(int[] path, byte[] outPrivateKey, byte[] outChainCode) {
-		byte[] privateKey = new byte[PRIVATE_KEY_LENGTH];
-		byte[] chainCode = new byte[CHAIN_CODE_LENGTH];
-		byte[] nextP = new byte[PRIVATE_KEY_LENGTH];
-		byte[] nextC = new byte[CHAIN_CODE_LENGTH];
-		Util.arrayCopyNonAtomic(masterPrivateKey, (short) 0, privateKey, (short) 0, PRIVATE_KEY_LENGTH);
-		Util.arrayCopyNonAtomic(masterChainCode, (short) 0, chainCode, (short) 0, CHAIN_CODE_LENGTH);
-		for (short i = 0; i < path.length; i++) {
-			deriveChildKey(privateKey, chainCode, path[i], nextP, nextC);
-			Util.arrayCopyNonAtomic(nextP, (short) 0, privateKey, (short) 0, PRIVATE_KEY_LENGTH);
-			Util.arrayCopyNonAtomic(nextC, (short) 0, chainCode, (short) 0, CHAIN_CODE_LENGTH);
+	public void deriveBip44FullyHardened(
+			byte coinType,
+			byte account,
+			byte change,
+			int addressIndex,
+			byte[] outPrivateKey,
+			byte[] outChainCode) {
+		byte[] currentPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+		byte[] currentChainCode = new byte[CHAIN_CODE_LENGTH];
+		Util.arrayCopyNonAtomic(masterPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(masterChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+		int[] path = new int[]{
+				HARDENED_OFFSET + 44,
+				HARDENED_OFFSET + (coinType & 0xFF),
+				HARDENED_OFFSET + (account & 0xFF),
+				HARDENED_OFFSET + (change & 0xFF),
+				HARDENED_OFFSET + addressIndex
+		};
+
+		for (int i = 0; i < path.length; i++) {
+			byte[] nextPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+			byte[] nextChainCode = new byte[CHAIN_CODE_LENGTH];
+
+			deriveChildKeyHardened(
+					currentPrivateKey,
+					currentChainCode,
+					path[i],
+					coinType,
+					nextPrivateKey,
+					nextChainCode
+			);
+
+			// current ← next
+			Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
 		}
-		Util.arrayCopyNonAtomic(privateKey, (short) 0, outPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
-		Util.arrayCopyNonAtomic(chainCode, (short) 0, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
+		Util.arrayCopyNonAtomic(currentPrivateKey, (short) 0, outPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(currentChainCode, (short) 0, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
+	}
+
+	/**
+	 * Derive full BIP-44 path: m/44'/coinType'/account'/change/addressIndex
+	 */
+	public void deriveBip44(
+			byte coinType,
+			byte account,
+			byte change,
+			int addressIndex,
+			byte[] pubAfterAccount,
+			byte[] pubAfterChange,
+			byte[] outPrivateKey,
+			byte[] outChainCode) {
+		byte[] currentPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+		byte[] currentChainCode = new byte[CHAIN_CODE_LENGTH];
+		Util.arrayCopyNonAtomic(masterPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(masterChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
+		// Hardened for 44', coinType', account'
+		int[] hardPath = new int[]{
+				HARDENED_OFFSET + 44,
+				HARDENED_OFFSET + (coinType & 0xFF),
+				HARDENED_OFFSET + (account & 0xFF)
+		};
+		for (int idx = 0; idx < hardPath.length; idx++) {
+			byte[] nextPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+			byte[] nextChainCode = new byte[CHAIN_CODE_LENGTH];
+			deriveChildKeyHardened(currentPrivateKey, currentChainCode, hardPath[idx], coinType, nextPrivateKey, nextChainCode);
+			Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+		}
+
+		byte[] tmpPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+		byte[] tmpChainCode = new byte[CHAIN_CODE_LENGTH];
+		deriveChildKeyNonHardened(pubAfterAccount, currentPrivateKey, currentChainCode, change & 0xFF, coinType, tmpPrivateKey, tmpChainCode);
+
+		deriveChildKeyNonHardened(pubAfterChange, tmpPrivateKey, tmpChainCode, addressIndex, coinType, outPrivateKey, outChainCode);
 	}
 }
 
