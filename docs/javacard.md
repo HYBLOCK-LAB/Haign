@@ -22,12 +22,14 @@ This document outlines key differences and caveats developers should be aware of
 # APDU Instruction Codes and Status Words
 ## Instruction Codes
 
-### 0. Code Types
+### 0. Code Types 
+> Code type follow the [SLIP ‑ 0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+
 | INS               | Coin                 | 
 |-------------------|----------------------|
-| **`0x01`**        | Bitcoin              | 
-| **`0x02`**        | Ethereum             | 
-| **`0x03`**        | XRP                  |  
+| **`0x00`**        | Bitcoin              | 
+| **`0x3c`**        | Ethereum             | 
+| **`0x90`**        | XRP                  |  
 
 ### 1. PIN/Authentication Instructions (0x2X)
 | INS               | Constant                     | Meaning                                  | 
@@ -55,6 +57,8 @@ This document outlines key differences and caveats developers should be aware of
 |-------------------|------------------------------|------------------------------------------|
 | **`0x50`**        | `INS_GET_EEPROM_FREE`        |	Returns the amount of free EEPROM memory remaining on the card as a 2‑byte big‑endian unsigned integer in the response data field. No input data is required. |
 
+### 5. Sedd (0x6X)
+| 0x60 | INS_SET_MASTER | Receives a 64‑byte seed generated externally from a BIP‑39 mnemonic. This seed is used to initialize the master key for BIP‑32/44 hierarchical key derivation. <br>The seed is not stored in EEPROM and is retained only in internal memory for secure derivation of hardened child keys via derivePath.<br>Lc must be 0x40 (64), and Data must contain the [64‑byte seed].<br>Example: 80 60 00 00 40 <64-byte SEED> |
 
 
 ## Status Words
