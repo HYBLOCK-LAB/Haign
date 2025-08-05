@@ -14,7 +14,7 @@ public class HDKeyDerivation {
 	public static final short PRIVATE_KEY_LENGTH = 32;
 	public static final short CHAIN_CODE_LENGTH = 32;
 
-	private Signature hmacSha512;
+	private HmacSha512 hmacSha512;
 	private byte[] hmacOutput;
 	private byte[] childData;
 	private byte[] childOut;
@@ -61,7 +61,7 @@ public class HDKeyDerivation {
 
 	public HDKeyDerivation() {
 		try {
-			hmacSha512 = Signature.getInstance(Signature.ALG_HMAC_SHA_512, false);
+			hmacSha512 = HmacSha512.getInstance();
 		} catch (CryptoException e) {
 			// does not support HMAC‑SHA512
 			ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
