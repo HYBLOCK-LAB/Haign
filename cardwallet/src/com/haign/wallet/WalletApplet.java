@@ -13,11 +13,14 @@ import javacardx.apdu.ExtendedLength;
  */
 
 public class WalletApplet extends Applet implements ExtendedLength {
+
+	private static final byte MAX_AID_LENGTH = (byte) 16;
+
 	// APDU instruction codes
 
 	// 0x2x: PIN/Authentication Instructions
 	private static final byte INS_VERIFY_PIN = (byte) 0x20;
-	private static final byte INS_CHANHE_PIN = (byte) 0x22;
+	private static final byte INS_CHANGE_PIN = (byte) 0x22;
 	private static final byte INS_RESET_PIN = (byte) 0x24;
 
 	// 0x3x: Key Management Instructions
@@ -51,6 +54,10 @@ public class WalletApplet extends Applet implements ExtendedLength {
 		keyManager = new KeyManager();
 		signatureManager = new SignatureManager();
 		appManager = new AppManager();
+		byte aidLen = bArray[bOffset];
+		if (aidLen <= 0 || aidLen > MAX_AID_LENGTH || (short) (bOffset + 1 + aidLen) > (short) bArray.length) {
+			ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+		}
 		register(bArray, ((short) (bOffset + 1)), bArray[bOffset]);
 	}
 
@@ -83,7 +90,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				// TODO maintain session in 30 seconds when sign transactions.
 				pinManager.verify(apdu);
 				break;
-			case INS_CHANHE_PIN:
+			case INS_CHANGE_PIN:
 				pinManager.change(apdu);
 				break;
 			case INS_RESET_PIN:
@@ -115,7 +122,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				break;
 			case INS_SET_MASTER_SEED:
 				keyManager.setMasterKey(apdu);
-
+				break;
 			default:
 				ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 		}

@@ -181,10 +181,10 @@ public class MathUtil {
 	 *
 	 * @return 1 if a > b, 0 if a == b, -1 if a < b
 	 */
-	private static int compare(byte[] a, short aOffset, byte[] b, short bOffset, short len) {
+	private static short compare(byte[] a, short aOffset, byte[] b, short bOffset, short len) {
 		for (short i = 0; i < len; i++) {
-			int ai = a[(short) (aOffset + i)] & 0xFF;
-			int bi = b[(short) (bOffset + i)] & 0xFF;
+			short ai = (short) (a[(short) (aOffset + i)] & 0xFF);
+			short bi = (short) (b[(short) (bOffset + i)] & 0xFF);
 			if (ai < bi) return -1;
 			if (ai > bi) return 1;
 		}

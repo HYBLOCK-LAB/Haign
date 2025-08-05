@@ -74,7 +74,6 @@ class KeyManager {
 		lazyInit();
 		byte[] buf = apdu.getBuffer();
 		short off = ISO7816.OFFSET_CDATA;
-
 		// UUID
 		byte[] uuid = new byte[UUID_LENGTH];
 		Util.arrayCopyNonAtomic(buf, off, uuid, (short) 0, UUID_LENGTH);
@@ -89,7 +88,7 @@ class KeyManager {
 		// change
 		byte change = buf[off++];
 		// addressIndex
-		int addressIndex = buf[off];
+		short addressIndex = buf[off];
 
 		// find free slot
 		byte slot = -1;
@@ -102,20 +101,32 @@ class KeyManager {
 		// derive child key
 		byte[] childPrivateKey = new byte[PRIVATE_KEY_LENGTH];
 		byte[] childChainCode = new byte[PRIVATE_KEY_LENGTH];
-		hdTree.deriveBip44FullyHardened(coinType, account, change, addressIndex, childPrivateKey, childChainCode);
-		// store private key
-		Util.arrayCopyNonAtomic(childPrivateKey, (short) 0, persistentPrivate, (short) (slot * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
 
-		// TODO REMOVE THIS CODE!!! derive public key using ECDH
-		// derive and store public key
-		privateKey.setS(childPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
-		KeyPair kp = new KeyPair(publicKey, privateKey);
-		kp.genKeyPair();
-		byte[] w = new byte[PUBLIC_KEY_LENGTH];
-		publicKey.getW(w, (short) 0);
-		Util.arrayCopyNonAtomic(w, (short) 0, persistentPublic, (short) (slot * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
-		Util.arrayCopyNonAtomic(uuid, (short) 0, uuidList, (short) (slot * UUID_LENGTH), UUID_LENGTH);
-		coinTypeList[slot] = coinType;
+		try {
+			hdTree.deriveBip44FullyHardened(coinType, account, change, addressIndex, childPrivateKey, childChainCode);
+
+			// TODO REMOVE THIS CODE!!! derive public key using ECDH
+			// derive public key
+			privateKey.setS(childPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+			KeyPair kp = new KeyPair(publicKey, privateKey);
+			kp.genKeyPair();
+			byte[] w = new byte[PUBLIC_KEY_LENGTH];
+			publicKey.getW(w, (short) 0);
+
+			// store keys
+			Util.arrayCopyNonAtomic(childPrivateKey, (short) 0, persistentPrivate, (short) (slot * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(w, (short) 0, persistentPublic, (short) (slot * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(uuid, (short) 0, uuidList, (short) (slot * UUID_LENGTH), UUID_LENGTH);
+			coinTypeList[slot] = coinType;
+		} catch (ISOException e) {
+			throw e;
+		} catch (CryptoException e) {
+			ISOException.throwIt((short) (0x6F10 | (short) (e.getReason() & 0xFF)));
+		} catch (ArrayIndexOutOfBoundsException e) {
+			ISOException.throwIt((short) 0x6F30);
+		} catch (Exception e) {
+			ISOException.throwIt((short) 0x6F20);
+		}
 	}
 
 	public void generateKeyPair(APDU apdu) {
