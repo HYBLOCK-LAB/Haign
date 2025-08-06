@@ -90,6 +90,9 @@ class KeyManager {
 		// addressIndex
 		short addressIndex = buf[off];
 
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index != -1) ISOException.throwIt((short) 0x6F16);
+
 		// find free slot
 		byte slot = -1;
 		for (byte i = 0; i < MAX_KEYS; i++) {
@@ -109,18 +112,6 @@ class KeyManager {
 
 			byte[] w = computePublicKey(childPrivateKey);
 
-
-			byte[] temp = new byte[4];
-			temp[0] = 0x00;
-			temp[1] = 0x00;
-			temp[2] = 0x00;
-			temp[3] = 0x00;
-			apdu.setOutgoing();
-			apdu.setOutgoingLength((short) (PRIVATE_KEY_LENGTH + PUBLIC_KEY_LENGTH + 5));
-			apdu.sendBytesLong(childPrivateKey, (short) 0, (short) PRIVATE_KEY_LENGTH);
-			apdu.sendBytesLong(temp, (short) 0, (short) 4);
-			apdu.sendBytesLong(w, (short) 0, (short) (PUBLIC_KEY_LENGTH + 1));
-
 			// store keys
 			Util.arrayCopyNonAtomic(childPrivateKey, (short) 0, persistentPrivate, (short) (slot * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
 			Util.arrayCopyNonAtomic(w, (short) 1, persistentPublic, (short) (slot * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
@@ -137,11 +128,13 @@ class KeyManager {
 		}
 	}
 
+	// TODO refactor when update sign logic
 	public void loadKeyPair() {
-		lazyInit();
-		byte index = getRequestedIndex();
-		privateKey.setS(persistentPrivate, (short) (index * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
-		publicKey.setW(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
+//		lazyInit();
+
+//		byte index = getRequestedIndex();
+//		privateKey.setS(persistentPrivate, (short) (index * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
+//		publicKey.setW(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
 	}
 
 
@@ -204,7 +197,14 @@ class KeyManager {
 		lazyInit();
 		byte[] buffer = apdu.getBuffer();
 		byte coinType = buffer[ISO7816.OFFSET_P1];
-		byte index = getRequestedIndex();
+		short dataOffset = ISO7816.OFFSET_CDATA;
+		short uuidLen = buffer[ISO7816.OFFSET_LC];
+		if (uuidLen < (short) 16)
+			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		byte[] uuid = new byte[uuidLen];
+		Util.arrayCopyNonAtomic(buffer, dataOffset, uuid, (short) 0, UUID_LENGTH);
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index == -1) ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
 
 		apdu.setOutgoing();
 		switch (coinType) {
@@ -240,10 +240,16 @@ class KeyManager {
 		byte[] buffer = apdu.getBuffer();
 
 		byte coinType = buffer[ISO7816.OFFSET_P1];
+		short dataOffset = ISO7816.OFFSET_CDATA;
+		short uuidLen = buffer[ISO7816.OFFSET_LC];
+		if (uuidLen < (short) 16)
+			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		byte[] uuid = new byte[uuidLen];
+		Util.arrayCopyNonAtomic(buffer, dataOffset, uuid, (short) 0, UUID_LENGTH);
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index == -1) ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
 
-		byte index = getRequestedIndex();
 		byte[] pubKeyHash = new byte[PRIVATE_KEY_LENGTH];
-
 		switch (coinType) {
 			case WalletApplet.COIN_BTC:
 				byte[] compressedBTC = new byte[PRIVATE_KEY_LENGTH];
@@ -290,22 +296,14 @@ class KeyManager {
 		return privateKey;
 	}
 
-	private byte getRequestedIndex() {
-		byte[] buffer = APDU.getCurrentAPDU().getBuffer();
-		byte coinType = buffer[ISO7816.OFFSET_P1];
-		short dataOffset = ISO7816.OFFSET_CDATA;
-		short uuidLen = buffer[ISO7816.OFFSET_LC];
-
-		if (uuidLen < (short) 16) {
-			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-		}
+	private byte getRequestedIndex(byte[] uuid, byte coinType) {
 
 		for (byte i = 0; i < MAX_KEYS; i++) {
 			if (coinTypeList[i] != coinType) continue;
 			boolean match = true;
 			short offset = (short) (i * UUID_LENGTH);
 			for (byte j = 0; j < UUID_LENGTH; j++) {
-				if (uuidList[(short) (offset + j)] != buffer[(short) (dataOffset + j)]) {
+				if (uuidList[(short) (offset + j)] != uuid[(short) (j)]) {
 					match = false;
 					break;
 				}
@@ -313,8 +311,7 @@ class KeyManager {
 			if (match)
 				return i;
 		}
-		ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND); // UUID not found
-		return -1;
+		return (byte) -1;  // UUID not found
 	}
 
 	private void setCurveParameters() {

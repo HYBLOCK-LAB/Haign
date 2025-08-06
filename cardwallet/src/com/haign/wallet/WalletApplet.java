@@ -106,7 +106,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				break;
 			case INS_SIGN:
 				checkAuth();
-				keyManager.loadKeyPair();
+//				keyManager.loadKeyPair();
 				signatureManager.sign(apdu, keyManager.getPrivateKey());
 				break;
 			case INS_GET_ADDRESS:
