@@ -121,6 +121,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				appManager.getFreeEEPROM(apdu);
 				break;
 			case INS_SET_MASTER_SEED:
+				checkAuth();
 				keyManager.setMasterKey(apdu);
 				break;
 			default:
