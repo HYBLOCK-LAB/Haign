@@ -171,33 +171,11 @@ public class HDKeyDerivation {
 		}
 		byte[] currentPrivateKey = new byte[PRIVATE_KEY_LENGTH];
 		byte[] currentChainCode = new byte[CHAIN_CODE_LENGTH];
+		byte[] nextPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+		byte[] nextChainCode = new byte[CHAIN_CODE_LENGTH];
 		Util.arrayCopyNonAtomic(masterPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
 		Util.arrayCopyNonAtomic(masterChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
-//		int[] path = new int[]{
-//				HARDENED_OFFSET + 44,
-//				HARDENED_OFFSET + (coinType & 0xFF),
-//				HARDENED_OFFSET + (account & 0xFF),
-//				HARDENED_OFFSET + (change & 0xFF),
-//				HARDENED_OFFSET + addressIndex
-//		};
 
-//		for (int i = 0; i < path.length; i++) {
-//			byte[] nextPrivateKey = new byte[PRIVATE_KEY_LENGTH];
-//			byte[] nextChainCode = new byte[CHAIN_CODE_LENGTH];
-//
-//			deriveChildKeyHardened(
-//					currentPrivateKey,
-//					currentChainCode,
-//					path[i],
-//					coinType,
-//					nextPrivateKey,
-//					nextChainCode
-//			);
-//
-//			// current ← next
-//			Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
-//			Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
-//		}
 		byte[] idxBuf = new byte[4];
 
 		// m/44'
@@ -206,8 +184,11 @@ public class HDKeyDerivation {
 				currentPrivateKey, currentChainCode,
 				idxBuf,
 				coinType,
-				currentPrivateKey, currentChainCode
+				nextPrivateKey, nextChainCode
 		);
+		Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
 
 		// m/44'/coinType'
 		putHardenedIndex((short) (account & 0xFF), idxBuf, (short) 0);
@@ -215,8 +196,11 @@ public class HDKeyDerivation {
 				currentPrivateKey, currentChainCode,
 				idxBuf,
 				coinType,
-				currentPrivateKey, currentChainCode
+				nextPrivateKey, nextChainCode
 		);
+		Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
 
 		// m/44'/coinType'/account''
 		putHardenedIndex((short) (account & 0xFF), idxBuf, (short) 0);
@@ -225,8 +209,11 @@ public class HDKeyDerivation {
 				currentPrivateKey, currentChainCode,
 				idxBuf,
 				coinType,
-				currentPrivateKey, currentChainCode
+				nextPrivateKey, nextChainCode
 		);
+		Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
 
 		// m/44'/coinType'/account'/change'
 		putHardenedIndex((short) (change & 0xFF), idxBuf, (short) 0);
@@ -234,8 +221,11 @@ public class HDKeyDerivation {
 				currentPrivateKey, currentChainCode,
 				idxBuf,
 				coinType,
-				currentPrivateKey, currentChainCode
+				nextPrivateKey, nextChainCode
 		);
+		Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, currentPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(nextChainCode, (short) 0, currentChainCode, (short) 0, CHAIN_CODE_LENGTH);
+
 
 		// m/44'/coinType'/account'/change'/addressIndex'
 		putHardenedIndex(addressIndex, idxBuf, (short) 0);
@@ -243,11 +233,11 @@ public class HDKeyDerivation {
 				currentPrivateKey, currentChainCode,
 				idxBuf,
 				coinType,
-				currentPrivateKey, currentChainCode
+				nextPrivateKey, nextChainCode
 		);
 
-		Util.arrayCopyNonAtomic(currentPrivateKey, (short) 0, outPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
-		Util.arrayCopyNonAtomic(currentChainCode, (short) 0, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
+		Util.arrayCopyNonAtomic(nextPrivateKey, (short) 0, outPrivateKey, (short) 0, PRIVATE_KEY_LENGTH);
+		Util.arrayCopyNonAtomic(nextChainCode, (short) 0, outChainCode, (short) 0, CHAIN_CODE_LENGTH);
 	}
 
 	/**
