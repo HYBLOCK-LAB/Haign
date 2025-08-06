@@ -1,40 +1,39 @@
 package com.haign.wallet;
 
-import javacard.framework.APDU;
-import javacard.framework.ISO7816;
-import javacard.framework.ISOException;
-import javacard.framework.Util;
+import javacard.framework.*;
 import javacard.security.*;
 
 class KeyManager {
 	private static final short KEY_LENGTH = KeyBuilder.LENGTH_EC_FP_256;
-	private static final byte MAX_KEYS = (byte) 5;
+	private static final byte MAX_KEYS = (byte) 10;
 
 	// 32 bytes: scalar value (secp256k1 private key)
 	private static final short PRIVATE_KEY_LENGTH = (short) 32;
 	// 33 bytes: [0x02 or 0x03] + X (compressed public key)
 	private static final short COMPRESSED_KEY_LENGTH = (short) 33;
+	// 64 bytes: X(32) + Y(32) (secp256k1 public key)
+	private static final short PUBLIC_KEY_LENGTH = (short) 64;
 	// 65 bytes: [0x04] + X(32) + Y(32) (uncompressed public key)
 	private static final short UNCOMPRESSED_KEY_LENGTH = (short) 65;
 	private static final short UUID_LENGTH = (short) 16;
 
+
 	// EEPROM storage (flattened)
 	private final byte[] persistentPrivate = new byte[MAX_KEYS * PRIVATE_KEY_LENGTH];
-	private final byte[] persistentPublic = new byte[MAX_KEYS * UNCOMPRESSED_KEY_LENGTH];
+	private final byte[] persistentPublic = new byte[MAX_KEYS * PUBLIC_KEY_LENGTH];
 	private final byte[] uuidList = new byte[MAX_KEYS * UUID_LENGTH];
+	private final byte[] coinTypeList = new byte[MAX_KEYS];
 
 	private ECPrivateKey privateKey;
 	private ECPublicKey publicKey;
-	private JCSEC256k1 curve256k1 = new JCSEC256k1();
+	private final SECP256k1 curve256k1 = new SECP256k1();
 
 	private boolean initialized = false;
 
-	public KeyManager() {
-//		privateKey = (ECPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PRIVATE, KEY_LENGTH, false);
-//		publicKey = (ECPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PUBLIC, KEY_LENGTH, false);
-//		keyPair = new KeyPair(publicKey, privateKey);
-//		setCurveParameters();
+	private HDKeyDerivation hdTree;
 
+	public KeyManager() {
+		hdTree = new HDKeyDerivation();
 	}
 
 	public void lazyInit() {
@@ -48,77 +47,185 @@ class KeyManager {
 		} catch (CryptoException e) {
 			ISOException.throwIt((short) (0x6F10 | (short) (e.getReason() & 0xFF)));
 		} catch (Exception e) {
-			ISOException.throwIt((short) 0x6F20);
+			ISOException.throwIt((short) 0x6F50);
 		}
 	}
 
-	public void generateKeyPair(APDU apdu) {
+	/**
+	 * INS=0x60: Inject master seed and set master key in HDKeyDerivation.
+	 * APDU data: [seed(64B)]
+	 */
+	public void setMasterKey(APDU apdu) {
 		lazyInit();
-
-		byte[] buffer = apdu.getBuffer();
-		short dataOffset = ISO7816.OFFSET_CDATA;
-		short uuidLen = buffer[ISO7816.OFFSET_LC];
-
-		if (uuidLen != UUID_LENGTH) {
+		byte[] buf = apdu.getBuffer();
+		short len = apdu.setIncomingAndReceive();
+		if (len != 64) {
 			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 		}
+		hdTree.setMasterKey(buf, ISO7816.OFFSET_CDATA, (short) 64);
+	}
 
-		byte freeIndex = -1;
+
+	/**
+	 * INS=0x61: Derive child key from stored master and path, then store.
+	 * APDU data: [UUID(16)||pathLen(1)||coinType(1)||account(1)||change(1)||address_index(1)]
+	 */
+	public void generateKeyPair(APDU apdu) {
+		lazyInit();
+		byte[] buf = apdu.getBuffer();
+		short off = ISO7816.OFFSET_CDATA;
+		// UUID
+		byte[] uuid = new byte[UUID_LENGTH];
+		Util.arrayCopyNonAtomic(buf, off, uuid, (short) 0, UUID_LENGTH);
+		off += UUID_LENGTH;
+
+		// path length
+		int pathLen = buf[off++] & 0xFF;
+		// coinType
+		byte coinType = buf[off++];
+		// account
+		byte account = buf[off++];
+		// change
+		byte change = buf[off++];
+		// addressIndex
+		short addressIndex = buf[off];
+
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index != -1) ISOException.throwIt((short) 0x6F16);
+
+		// find free slot
+		byte slot = -1;
 		for (byte i = 0; i < MAX_KEYS; i++) {
-			boolean empty = true;
-			short offset = (short) (i * UUID_LENGTH);
-			for (byte j = 0; j < UUID_LENGTH; j++) {
-				if (uuidList[(short) (offset + j)] != 0) {
-					empty = false;
-					break;
-				}
-			}
-			if (empty) {
-				freeIndex = i;
+			if (coinTypeList[i] == 0) {
+				slot = i;
 				break;
 			}
 		}
 
-		if (freeIndex == -1) {
-			ISOException.throwIt(ISO7816.SW_FILE_FULL);
+		if (slot < 0) ISOException.throwIt(ISO7816.SW_FILE_FULL);
+		// derive child key
+		byte[] childPrivateKey = new byte[PRIVATE_KEY_LENGTH];
+		byte[] childChainCode = new byte[PRIVATE_KEY_LENGTH];
+
+		try {
+			hdTree.deriveBip44FullyHardened(coinType, account, change, addressIndex, childPrivateKey, childChainCode);
+
+			byte[] w = computePublicKey(childPrivateKey);
+
+			// store keys
+			Util.arrayCopyNonAtomic(childPrivateKey, (short) 0, persistentPrivate, (short) (slot * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(w, (short) 1, persistentPublic, (short) (slot * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
+			Util.arrayCopyNonAtomic(uuid, (short) 0, uuidList, (short) (slot * UUID_LENGTH), UUID_LENGTH);
+			coinTypeList[slot] = coinType;
+		} catch (ISOException e) {
+			throw e;
+		} catch (CryptoException e) {
+			ISOException.throwIt((short) (0x6F10 | (short) (e.getReason() & 0xFF)));
+		} catch (ArrayIndexOutOfBoundsException e) {
+			ISOException.throwIt((short) 0x6F30);
+		} catch (Exception e) {
+			ISOException.throwIt((short) 0x6F50);
 		}
-
-		Util.arrayCopyNonAtomic(buffer, dataOffset, uuidList, (short) (freeIndex * UUID_LENGTH), UUID_LENGTH);
-
-		KeyPair kp = new KeyPair(publicKey, privateKey);
-		kp.genKeyPair();
-
-		privateKey.getS(persistentPrivate, (short) (freeIndex * PRIVATE_KEY_LENGTH));
-		publicKey.getW(persistentPublic, (short) (freeIndex * UNCOMPRESSED_KEY_LENGTH));
 	}
 
+	// TODO refactor when update sign logic
 	public void loadKeyPair() {
+//		lazyInit();
+
+//		byte index = getRequestedIndex();
+//		privateKey.setS(persistentPrivate, (short) (index * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
+//		publicKey.setW(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH);
+	}
+
+
+	public void getAllPublicKey(APDU apdu) {
 		lazyInit();
-		byte index = getRequestedIndex();
-		privateKey.setS(persistentPrivate, (short) (index * PRIVATE_KEY_LENGTH), PRIVATE_KEY_LENGTH);
-		publicKey.setW(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH), UNCOMPRESSED_KEY_LENGTH);
+
+		// Calculate total length
+		short totalLen = 1;
+		short count = 0;
+		for (byte i = 0; i < MAX_KEYS; i++) {
+			if (coinTypeList[i] == 0) continue;
+			count++;
+			if (coinTypeList[i] == WalletApplet.COIN_ETH)
+				totalLen += UNCOMPRESSED_KEY_LENGTH;
+			if (coinTypeList[i] == WalletApplet.COIN_BTC || coinTypeList[i] == WalletApplet.COIN_XRP)
+				totalLen += COMPRESSED_KEY_LENGTH;
+			// UUID and length bit
+			totalLen += UUID_LENGTH + 1;
+		}
+
+		// Prepare transient buffer for each uncompressed key
+		byte[] outBuf = JCSystem.makeTransientByteArray(UNCOMPRESSED_KEY_LENGTH, JCSystem.CLEAR_ON_DESELECT);
+		short outOffset = 0;
+		outBuf[outOffset++] = (byte) count;
+		// For each stored slot, send uncompressed public key
+		for (byte index = 0; index < MAX_KEYS; index++) {
+			short coinType = coinTypeList[index];
+			if (coinType == 0) continue;
+			// Insert length byte
+			short keyLen = (coinType == WalletApplet.COIN_ETH) ? UNCOMPRESSED_KEY_LENGTH : COMPRESSED_KEY_LENGTH;
+			outBuf[outOffset++] = (byte) (keyLen + UUID_LENGTH);
+			// Copy UUID
+			Util.arrayCopyNonAtomic(uuidList, (short) (index * UUID_LENGTH), outBuf, outOffset, UUID_LENGTH);
+			outOffset += UUID_LENGTH;
+			switch (coinType) {
+				case WalletApplet.COIN_ETH:
+					// Ethereum: Uncompressed public key (65 bytes, starts with 0x04)
+					outBuf[outOffset++] = (byte) 0x04;
+					Util.arrayCopyNonAtomic(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), outBuf, outOffset, PUBLIC_KEY_LENGTH);
+					outOffset += PUBLIC_KEY_LENGTH;
+					break;
+				case WalletApplet.COIN_BTC:
+				case WalletApplet.COIN_XRP:
+					// BTC/XRP: compressed public key (33 bytes)
+					compressPublicKey(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), outBuf, outOffset);
+					break;
+				default:
+					ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+			}
+		}
+		// Send entire payload at once
+		apdu.setOutgoing();
+		apdu.setOutgoingLength(totalLen);
+		apdu.sendBytesLong(outBuf, (short) 0, totalLen);
+
 	}
 
 	// instruction: [CLA][INS][coin_type][0x00][0x10][UUID]
-	public void sendPublicKey(APDU apdu) {
+	public void getPublicKey(APDU apdu) {
 		lazyInit();
 		byte[] buffer = apdu.getBuffer();
 		byte coinType = buffer[ISO7816.OFFSET_P1];
-
-		byte index = getRequestedIndex();
+		short dataOffset = ISO7816.OFFSET_CDATA;
+		short uuidLen = buffer[ISO7816.OFFSET_LC];
+		if (uuidLen < (short) 16)
+			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		byte[] uuid = new byte[uuidLen];
+		Util.arrayCopyNonAtomic(buffer, dataOffset, uuid, (short) 0, UUID_LENGTH);
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index == -1) ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
 
 		apdu.setOutgoing();
 		switch (coinType) {
 			case WalletApplet.COIN_ETH:
-				// Ethereum: uncompressed public key (65 bytes, starts with 0x04)
-				apdu.setOutgoingLength(UNCOMPRESSED_KEY_LENGTH);
-				apdu.sendBytesLong(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH), UNCOMPRESSED_KEY_LENGTH);
+				// Ethereum: Uncompressed public key (65 bytes, starts with 0x04)
+				byte[] tmp = new byte[PUBLIC_KEY_LENGTH];
+				byte[] full = new byte[UNCOMPRESSED_KEY_LENGTH];
+				Util.arrayCopyNonAtomic(persistentPublic,
+						(short) (index * PUBLIC_KEY_LENGTH),
+						tmp, (short) 0,
+						PUBLIC_KEY_LENGTH);
+				full[0] = 0x04;
+				Util.arrayCopyNonAtomic(tmp, (short) 0, full, (short) 1, PUBLIC_KEY_LENGTH);
+				apdu.setOutgoingLength((short) full.length);
+				apdu.sendBytesLong(full, (short) 0, (short) full.length);
 				break;
 			case WalletApplet.COIN_BTC:
 			case WalletApplet.COIN_XRP:
 				// BTC/XRP: compressed public key (33 bytes)
 				byte[] compressed = new byte[COMPRESSED_KEY_LENGTH];
-				compressPublicKey(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH), compressed, (short) 0);
+				compressPublicKey(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), compressed, (short) 0);
 				apdu.setOutgoingLength((short) compressed.length);
 				apdu.sendBytesLong(compressed, (short) 0, (short) compressed.length);
 				break;
@@ -133,14 +240,20 @@ class KeyManager {
 		byte[] buffer = apdu.getBuffer();
 
 		byte coinType = buffer[ISO7816.OFFSET_P1];
+		short dataOffset = ISO7816.OFFSET_CDATA;
+		short uuidLen = buffer[ISO7816.OFFSET_LC];
+		if (uuidLen < (short) 16)
+			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		byte[] uuid = new byte[uuidLen];
+		Util.arrayCopyNonAtomic(buffer, dataOffset, uuid, (short) 0, UUID_LENGTH);
+		byte index = getRequestedIndex(uuid, coinType);
+		if (index == -1) ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
 
-		byte index = getRequestedIndex();
 		byte[] pubKeyHash = new byte[PRIVATE_KEY_LENGTH];
-
 		switch (coinType) {
 			case WalletApplet.COIN_BTC:
 				byte[] compressedBTC = new byte[PRIVATE_KEY_LENGTH];
-				compressPublicKey(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH), compressedBTC, (short) 0);
+				compressPublicKey(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), compressedBTC, (short) 0);
 				MessageDigest sha256 = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
 				MessageDigest ripemd160 = MessageDigest.getInstance(MessageDigest.ALG_RIPEMD160, false);
 				sha256.doFinal(compressedBTC, (short) 0, COMPRESSED_KEY_LENGTH, pubKeyHash, (short) 0);
@@ -152,7 +265,7 @@ class KeyManager {
 				// implement ALG_KECCAK_256
 				Keccak256 keccak = new Keccak256();
 				keccak.reset();
-				keccak.digest(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH + 1), (short) 64, pubKeyHash,
+				keccak.digest(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), PUBLIC_KEY_LENGTH, pubKeyHash,
 						(short) 0);
 
 //			MessageDigest keccak = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false); // placeholder
@@ -163,7 +276,7 @@ class KeyManager {
 				break;
 			case WalletApplet.COIN_XRP:
 				byte[] compressedXRP = new byte[COMPRESSED_KEY_LENGTH];
-				compressPublicKey(persistentPublic, (short) (index * UNCOMPRESSED_KEY_LENGTH), compressedXRP, (short) 0);
+				compressPublicKey(persistentPublic, (short) (index * PUBLIC_KEY_LENGTH), compressedXRP, (short) 0);
 				MessageDigest sha256_2 = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
 				MessageDigest ripemd160_2 = MessageDigest.getInstance(MessageDigest.ALG_RIPEMD160, false);
 				sha256_2.doFinal(compressedXRP, (short) 0, COMPRESSED_KEY_LENGTH, pubKeyHash, (short) 0);
@@ -183,20 +296,14 @@ class KeyManager {
 		return privateKey;
 	}
 
-	private byte getRequestedIndex() {
-		byte[] buffer = APDU.getCurrentAPDU().getBuffer();
-		short dataOffset = ISO7816.OFFSET_CDATA;
-		short uuidLen = buffer[ISO7816.OFFSET_LC];
-
-		if (uuidLen < (short) 16) {
-			ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-		}
+	private byte getRequestedIndex(byte[] uuid, byte coinType) {
 
 		for (byte i = 0; i < MAX_KEYS; i++) {
+			if (coinTypeList[i] != coinType) continue;
 			boolean match = true;
 			short offset = (short) (i * UUID_LENGTH);
 			for (byte j = 0; j < UUID_LENGTH; j++) {
-				if (uuidList[(short) (offset + j)] != buffer[(short) (dataOffset + j)]) {
+				if (uuidList[(short) (offset + j)] != uuid[(short) (j)]) {
 					match = false;
 					break;
 				}
@@ -204,8 +311,7 @@ class KeyManager {
 			if (match)
 				return i;
 		}
-		ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND); // UUID not found
-		return -1;
+		return (byte) -1;  // UUID not found
 	}
 
 	private void setCurveParameters() {
@@ -232,10 +338,46 @@ class KeyManager {
 		publicKey.setK((short) 1);
 	}
 
+	/**
+	 * Converts a raw (uncompressed) public key (X‖Y, 64 bytes) into its compressed form (33 bytes).
+	 *
+	 * @param uncompressed 64-byte raw public key array, stored as X‖Y
+	 * @param inOffset     Offset in the uncompressed array where the public key begins
+	 * @param compressed   Buffer to receive the compressed public key (must be at least 33 bytes)
+	 * @param outOffset    Offset in the compressed buffer at which to write the data
+	 */
 	private void compressPublicKey(byte[] uncompressed, short inOffset, byte[] compressed, short outOffset) {
-		short xOffset = (short) (inOffset + 1); // skip prefix 0x04
-		byte yLastByte = uncompressed[(short) (inOffset + 64)];
-		compressed[outOffset] = (byte) ((yLastByte & 1) == 0 ? 0x02 : 0x03);
-		Util.arrayCopyNonAtomic(uncompressed, xOffset, compressed, (short) (outOffset + 1), PRIVATE_KEY_LENGTH);
+		byte yLastByte = uncompressed[(short) (inOffset + 63)];
+		compressed[outOffset] = (byte) ((yLastByte & 0x01) == 0 ? 0x02 : 0x03);
+		Util.arrayCopyNonAtomic(uncompressed, inOffset, compressed, (short) (outOffset + 1), PRIVATE_KEY_LENGTH);
+	}
+
+	/**
+	 * Calculates and returns the secp256k1 public key (uncompressed, 65 bytes) for the given 32-byte private key.
+	 *
+	 * @param privateKeyBytes a 32-byte private scalar
+	 *
+	 * @return a 65-byte uncompressed public key array (0x04‖X‖Y)
+	 */
+	public byte[] computePublicKey(byte[] privateKeyBytes) {
+		byte[] G = curve256k1.G;
+
+		// Set private scalar
+		privateKey.setS(privateKeyBytes, (short) 0, PRIVATE_KEY_LENGTH);
+
+		// Initialize ECDH KeyAgreement
+		KeyAgreement ka = KeyAgreement.getInstance(
+				KeyAgreement.ALG_EC_SVDP_DH_PLAIN_XY, false);
+		ka.init(privateKey);
+
+		// Perform scalar multiplication on base point G: Q = k·G
+		byte[] qW = new byte[UNCOMPRESSED_KEY_LENGTH];
+		short qLen = ka.generateSecret(
+				G, (short) 0, (short) G.length,  // input: 0x04‖Gx‖Gy
+				qW, (short) 0                    // output buffer
+		);
+		// qLen == POINT_LEN
+		qW[64] = (byte) qLen;
+		return qW;
 	}
 }

@@ -13,29 +13,36 @@ import javacardx.apdu.ExtendedLength;
  */
 
 public class WalletApplet extends Applet implements ExtendedLength {
+
+	private static final byte MAX_AID_LENGTH = (byte) 16;
+
 	// APDU instruction codes
 
 	// 0x2x: PIN/Authentication Instructions
 	private static final byte INS_VERIFY_PIN = (byte) 0x20;
-	private static final byte INS_CHANHE_PIN = (byte) 0x22;
+	private static final byte INS_CHANGE_PIN = (byte) 0x22;
 	private static final byte INS_RESET_PIN = (byte) 0x24;
 
 	// 0x3x: Key Management Instructions
 	private static final byte INS_GENERATE_KEY = (byte) 0x30;
 	private static final byte INS_GET_PUBKEY = (byte) 0x32;
-	private static final byte INS_SIGN = (byte) 0x34;
+	private static final byte INS_GET_ALL_PUBKEY = (byte) 0x34;
+	private static final byte INS_SIGN = (byte) 0x36;
 
 	// 0x4x: Address Retrieval Instructions
 	private static final byte INS_GET_ADDRESS = (byte) 0x40;
-	private static final byte INS_LIST_ADDRESSES = (byte) 0x42;
+//	private static final byte INS_GET_LIST_ADDRESSES = (byte) 0x42;
 
 	// 0x5x: Metadata Instructions
 	private static final byte INS_GET_EEPROM_FREE = (byte) 0x50;
 
+	// 0x6x: seed
+	private static final byte INS_SET_MASTER_SEED = (byte) 0x60;
+
 	// COINS
-	static final byte COIN_BTC = (byte) 0x01;
-	static final byte COIN_ETH = (byte) 0x02;
-	static final byte COIN_XRP = (byte) 0x03;
+	static final byte COIN_BTC = (byte) 0x00;
+	static final byte COIN_ETH = (byte) 0x3c;
+	static final byte COIN_XRP = (byte) 0x90;
 
 	private final PINManager pinManager;
 	private final KeyManager keyManager;
@@ -47,6 +54,10 @@ public class WalletApplet extends Applet implements ExtendedLength {
 		keyManager = new KeyManager();
 		signatureManager = new SignatureManager();
 		appManager = new AppManager();
+		byte aidLen = bArray[bOffset];
+		if (aidLen <= 0 || aidLen > MAX_AID_LENGTH || (short) (bOffset + 1 + aidLen) > (short) bArray.length) {
+			ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+		}
 		register(bArray, ((short) (bOffset + 1)), bArray[bOffset]);
 	}
 
@@ -79,7 +90,7 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				// TODO maintain session in 30 seconds when sign transactions.
 				pinManager.verify(apdu);
 				break;
-			case INS_CHANHE_PIN:
+			case INS_CHANGE_PIN:
 				pinManager.change(apdu);
 				break;
 			case INS_RESET_PIN:
@@ -91,26 +102,28 @@ public class WalletApplet extends Applet implements ExtendedLength {
 				break;
 			case INS_GET_PUBKEY:
 				checkAuth();
-				keyManager.sendPublicKey(apdu);
+				keyManager.getPublicKey(apdu);
 				break;
 			case INS_SIGN:
 				checkAuth();
-				keyManager.loadKeyPair();
+//				keyManager.loadKeyPair();
 				signatureManager.sign(apdu, keyManager.getPrivateKey());
 				break;
 			case INS_GET_ADDRESS:
 				checkAuth();
 				keyManager.getAddress(apdu);
 				break;
-//			case INS_LIST_ADDRESSES:
-//				checkAuth();
-//				keyManager.loadKeyPair();
-//				signatureManager.getAllAddress(apdu);
-//				break;
+			case INS_GET_ALL_PUBKEY:
+				checkAuth();
+				keyManager.getAllPublicKey(apdu);
+				break;
 			case INS_GET_EEPROM_FREE:
 				appManager.getFreeEEPROM(apdu);
 				break;
-
+			case INS_SET_MASTER_SEED:
+				checkAuth();
+				keyManager.setMasterKey(apdu);
+				break;
 			default:
 				ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 		}

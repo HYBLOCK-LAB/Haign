@@ -2,19 +2,29 @@
 00 A4 04 00 06 F0 00 00 00 01 01
 ; Expected: 9000 (Success)
 
+; VERIFY PIN
+; example: PIN = 12 34 56 78 (4 bytes), Lc = 0x04
+80 20 00 00 04 31 32 33 34
+; Expected: 9000  (Success)
+
+; INITIALIZE SEED
+; example: PIN = 12 34 56 78 (4 bytes), Lc = 0x04
+; 80 60 00 00 40 3F A1 5C 9E 7D 22 4B 88 FF E3 10 6A D4 5B 99 0C 2E 7F 41 33 B2 C8 56 0D A9 14 3E 6F 82 71 D0 4A C5 E2 37 8B 90 6D 11 F4 AB 28 53 9A 7C 0E BD 66 19 8D 4F 23 7A E0 C1 5D F2 47 8C A3 05 B7 6E 92
+; Expected: 9000  (Success)
+
 ; GENERATE KEY PAIR (INS = 0x30)
 ; use 16-byte UUID, Lc = 0x10
-80 30 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; 80 30 00 00 15 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B1 04 90 00 00 00
 ; Expected: 9000 (Success);
 
 ; GET PUBLIC KEY (INS = 0x32)
 ; get public key using UUID (ETH → uncompressed, 65 bytes)
-80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+80 32 90 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
 ; Expected response: 65-byte uncompressed public key (starts with 0x04) + SW 9000
 
 ; GET PUBLIC ADDRESS
 ; get public address using UUID (ETH → uncompressed, 65 bytes)
-80 32 00 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
+; 80 32 01 00 10 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0
 ; Expected response: compressed public address (starts with 0x04) + SW 9000
 
 ; SIGN (INS = 0x34)

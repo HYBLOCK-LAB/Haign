@@ -33,6 +33,7 @@
 
 package com.haign.wallet;
 
+import javacard.framework.JCSystem;
 import javacard.framework.Util;
 
 /*
@@ -109,5 +110,84 @@ public class MathUtil {
 		buff = input[(short) (inOffset + 4)];
 		output[(short) (outOffset + 4)] = input[(short) (inOffset + 3)];
 		output[(short) (outOffset + 3)] = buff;
+	}
+
+	/**
+	 * Add two 32-byte unsigned big-endian integers: result = (a + b) mod 2^256.
+	 *
+	 * @param a       Operand A (32 bytes)
+	 * @param aOffset Offset into A
+	 * @param b       Operand B (32 bytes)
+	 * @param bOffset Offset into B
+	 * @param result  Output buffer (32 bytes)
+	 * @param rOffset Offset into result
+	 */
+	public static void add32(byte[] a, short aOffset, byte[] b, short bOffset, byte[] result, short rOffset) {
+		short carry = 0;
+
+		for (short i = (short) (rOffset + 31); i >= rOffset; i--) {
+			short ai = (short) (a[(short) (aOffset + (i - rOffset))] & 0xFF);
+			short bi = (short) (b[(short) (bOffset + (i - rOffset))] & 0xFF);
+			short sum = (short) (ai + bi + carry);
+			result[i] = (byte) sum;
+			carry = (short) (sum >>> 8);
+		}
+	}
+
+	/**
+	 * Compute result = x mod m for 32-byte unsigned big-endian integers.
+	 * Assumes 0 <= x < 2*m.
+	 *
+	 * @param x       Dividend (32 bytes)
+	 * @param xOffset Offset into x
+	 * @param m       Modulus (32 bytes)
+	 * @param mOffset Offset into m
+	 * @param result  Output buffer (32 bytes)dlrj
+	 * @param rOffset Offset into result
+	 */
+	public static void mod32(byte[] x, short xOffset, byte[] m, short mOffset, byte[] result, short rOffset) {
+
+		byte[] tmp = JCSystem.makeTransientByteArray((short) 32, JCSystem.CLEAR_ON_DESELECT);
+		Util.arrayCopyNonAtomic(x, xOffset, tmp, (short) 0, (short) 32);
+
+		if (compare(tmp, (short) 0, m, mOffset, (short) 32) >= 0) {
+			sbb(tmp, (short) 0, m, mOffset, (short) 0, (short) 32);
+		}
+
+		Util.arrayCopyNonAtomic(tmp, (short) 0, result, rOffset, (short) 32);
+	}
+
+	/**
+	 * Subtract y from x with borrow: x[ outOffset... ] = x - y.
+	 */
+	private static void sbb(byte[] x, short xOffset, byte[] y, short yOffset, short outOffset, short len) {
+		short borrow = 0;
+		for (short i = (short) (len - 1); i >= 0; i--) {
+			short xi = (short) (x[(short) (xOffset + i)] & 0xFF);
+			short yi = (short) (y[(short) (yOffset + i)] & 0xFF);
+			short diff = (short) (xi - yi - borrow);
+			if (diff < 0) {
+				diff += 256;
+				borrow = 1;
+			} else {
+				borrow = 0;
+			}
+			x[(short) (outOffset + i)] = (byte) diff;
+		}
+	}
+
+	/**
+	 * Compare two unsigned big-endian arrays.
+	 *
+	 * @return 1 if a > b, 0 if a == b, -1 if a < b
+	 */
+	private static short compare(byte[] a, short aOffset, byte[] b, short bOffset, short len) {
+		for (short i = 0; i < len; i++) {
+			short ai = (short) (a[(short) (aOffset + i)] & 0xFF);
+			short bi = (short) (b[(short) (bOffset + i)] & 0xFF);
+			if (ai < bi) return -1;
+			if (ai > bi) return 1;
+		}
+		return 0;
 	}
 }
