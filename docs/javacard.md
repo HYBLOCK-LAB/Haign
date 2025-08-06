@@ -70,6 +70,9 @@ This document outlines key differences and caveats developers should be aware of
 | **`0x6F13`**      | `NO_SUCH_ALGORITHM`        |	The requested cryptographic algorithm or transformation is not supported by the card.                                              |
 | **`0x6F14`**      | `INVALID_INIT`             |	Failed to initialize the cryptographic operation with the given parameters (e.g., incorrect algorithm mode or invalid key params). |
 | **`0x6F15`**      | `ILLEGAL_USE`              |	The requested operation is not allowed in the current state or context (e.g., invoking a sign operation on a non‑signing key).     |
+| **`0x6F30`**      | `OUT_OF_INDEX`             |	The index is out of range for array.  |
+| **`0x6F50`**      | `UNEXPECTED_ERROR`         | occured Unexpected error     |
+
 
 ### ISO7816
 | Status Code       | Constant                           | Meaning                                                                                            | 
@@ -83,11 +86,12 @@ This document outlines key differences and caveats developers should be aware of
 | **`0x6A81`**      | `SW_FUNC_NOT_SUPPORTED`            | The requested function or instruction is not supported by this applet.                             |
 | **`0x6A82`**      | `SW_FILE_NOT_FOUND`                | The specified file or object could not be found.                                                   |
 | **`0x6A83`**      | `SW_RECORD_NOT_FOUND`              | The requested record in the currently selected file does not exist.                                |
+| **`0x6A84`**      | `SW_FILE_FULL`                     | There is no more space in the file or object to store additional data.                             |
 | **`0x6A86`**      | `SW_INCORRECT_P1P2`                | The combination of P1 and P2 parameters is not valid for this instruction.                         |
 | **`0x6A88`**      | `SW_WRONG_P1P2`                    | One or both of the P1/P2 parameters are outside the allowed range for this command.                |
 | **`0x6D00`**      | `SW_INS_NOT_SUPPORTED`             | The INS byte in the command header is not recognized or implemented.                               |
 | **`0x6E00`**      | `SW_CLA_NOT_SUPPORTED`             | The CLA byte in the command header is not supported by the card.                                   |
-| **`0x6A84`**      | `SW_FILE_FULL`                     | There is no more space in the file or object to store additional data.                             |
+
 
 
 
