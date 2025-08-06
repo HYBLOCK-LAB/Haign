@@ -70,6 +70,7 @@ This document outlines key differences and caveats developers should be aware of
 | **`0x6F13`**      | `NO_SUCH_ALGORITHM`        |	The requested cryptographic algorithm or transformation is not supported by the card.                                              |
 | **`0x6F14`**      | `INVALID_INIT`             |	Failed to initialize the cryptographic operation with the given parameters (e.g., incorrect algorithm mode or invalid key params). |
 | **`0x6F15`**      | `ILLEGAL_USE`              |	The requested operation is not allowed in the current state or context (e.g., invoking a sign operation on a non‑signing key).     |
+| **`0x6F16`**      | `KEY_ALREADY_EXISTS`       |	Key alreay exists when try to generate key pair.     |
 | **`0x6F30`**      | `OUT_OF_INDEX`             |	The index is out of range for array.  |
 | **`0x6F50`**      | `UNEXPECTED_ERROR`         | occured Unexpected error     |
 
